@@ -228,17 +228,6 @@ function VendorProfileModal({
               <StatusBadge status={vendor.status || undefined} />
             </div>
             <div className="flex gap-2">
-              {!admin.canCrud && countVendorDocuments(vendor) > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                  onClick={() => downloadVendorDocumentsZip(vendor)}
-                >
-                  <DownloadIcon className="w-3.5 h-3.5" />
-                  Download ZIP
-                </Button>
-              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -272,10 +261,25 @@ function VendorProfileModal({
             </div>
           </div>
           <div className="rounded-lg border p-4 space-y-2">
-            <p className="text-sm font-semibold text-foreground">Documents</p>
-            <p className="text-xs text-muted-foreground">
-              Only files actually uploaded by the vendor are listed as available.
-            </p>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Documents</p>
+                <p className="text-xs text-muted-foreground">
+                  Only files actually uploaded by the vendor are listed as available.
+                </p>
+              </div>
+              {!admin.canCrud && countVendorDocuments(vendor) > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                  onClick={() => downloadVendorDocumentsZip(vendor)}
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  Download ZIP
+                </Button>
+              )}
+            </div>
             {[
               {
                 label: "PAN Certificate",
@@ -687,10 +691,6 @@ function AdminDashboardInner({
     return (vendors ?? [])
       .filter((v) => {
         const status = v.status ?? "pending";
-        const inQueue = admin.canCrud
-          ? true
-          : admin.queue.includes(status);
-        if (!inQueue) return false;
 
         const q = search.toLowerCase();
         const matchSearch =
