@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import type { Vendor } from "@/lib/supabase/types";
 import { getVendorDocumentUrl } from "./supabase/storage";
+import { getAdminActivity } from "@/app/admin-dashboard/_lib/admins";
 import { toast } from "sonner";
 
 /**
@@ -96,6 +97,7 @@ export function exportVendorsToExcel(
   }
 
   const rows: (string | number)[][] = [headers];
+  const activities = getAdminActivity();
 
   vendors.forEach((v) => {
     const status = v.status ?? "pending";
@@ -116,9 +118,28 @@ export function exportVendorsToExcel(
       gstStatus = "Approved";
       itStatus = "Approved";
     } else if (status === "rejected") {
-      accountsStatus = "Rejected";
-      gstStatus = "Rejected";
-      itStatus = "Rejected";
+      const rejAct = activities.find(
+        (a) =>
+          a.action === "rejected" &&
+          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber))
+      );
+
+      const rejRole = rejAct?.adminRole;
+
+      if (rejRole === "gst") {
+        accountsStatus = "Approved";
+        gstStatus = "Rejected";
+        itStatus = "Pending";
+      } else if (rejRole === "it") {
+        accountsStatus = "Approved";
+        gstStatus = "Approved";
+        itStatus = "Rejected";
+      } else {
+        // Rejected at Accounts stage (or default)
+        accountsStatus = "Rejected";
+        gstStatus = "Pending";
+        itStatus = "Pending";
+      }
     }
 
     const row: (string | number)[] = [
