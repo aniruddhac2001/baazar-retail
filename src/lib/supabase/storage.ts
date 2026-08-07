@@ -109,16 +109,15 @@ export async function uploadVendorDocument(
     }
   }
 
-  // Graceful Local Fallback if Supabase storage buckets do not exist yet
+  // Graceful Fallback if Supabase storage upload fails or bucket is missing
   onProgress?.(50);
   const dataUrl = await fileToDataUrl(file);
   onProgress?.(100);
-  const localId = `local-${Date.now()}-${safeName}`;
 
   return {
-    storageId: localId,
+    storageId: dataUrl,
     fileName: file.name,
-    path: localId,
+    path: path,
     publicUrl: dataUrl,
   };
 }
@@ -157,7 +156,7 @@ function uploadWithProgress(
 
 /** Remove a file from the vendor documents bucket by path/storageId. */
 export async function removeVendorDocument(storageId: string): Promise<void> {
-  if (!storageId || storageId.startsWith("local-")) return;
+  if (!storageId || storageId.startsWith("local-") || storageId.startsWith("data:")) return;
   const { error } = await supabase.storage
     .from(VENDOR_DOCS_BUCKET)
     .remove([storageId]);
@@ -169,10 +168,22 @@ export async function getVendorDocumentUrl(
   storageId: string,
   expiresInSeconds = 3600
 ): Promise<string | null> {
-  if (!storageId || storageId.startsWith("local-")) return null;
-  const { data, error } = await supabase.storage
-    .from(VENDOR_DOCS_BUCKET)
-    .createSignedUrl(storageId, expiresInSeconds);
-  if (error) return null;
-  return data.signedUrl;
+  if (!storageId || !storageId.trim()) return null;
+  if (storageId.startsWith("data:")) return storageId;
+  if (storageId.startsWith("http://") || storageId.startsWith("https://")) return storageId;
+
+  try {
+    const { data: publicData } = supabase.storage
+      .from(VENDOR_DOCS_BUCKET)
+      .getPublicUrl(storageId);
+    if (publicData?.publicUrl) return publicData.publicUrl;
+
+    const { data, error } = await supabase.storage
+      .from(VENDOR_DOCS_BUCKET)
+      .createSignedUrl(storageId, expiresInSeconds);
+    if (error) return null;
+    return data.signedUrl;
+  } catch {
+    return null;
+  }
 }

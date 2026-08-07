@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { exportVendorsToExcel, getVendorFilename, downloadVendorDocumentsZip } from "@/lib/excel-export";
+import { getVendorDocumentUrl } from "@/lib/supabase/storage";
 import {
   ShieldAlertIcon,
   UsersIcon,
@@ -323,67 +324,95 @@ function VendorProfileModal({
             {[
               {
                 label: "PAN Certificate",
-                available: !!(vendor.panFileId && String(vendor.panFileId).trim()),
+                fileId: vendor.panFileId,
+                name: "PAN_Certificate",
               },
               {
                 label: "GST Certificate",
-                available: !!(vendor.gstFileId && String(vendor.gstFileId).trim()),
+                fileId: vendor.gstFileId,
+                name: "GST_Certificate",
               },
               {
                 label: "Cancelled Cheque",
-                available: !!(vendor.chequeFileId && String(vendor.chequeFileId).trim()),
+                fileId: vendor.chequeFileId,
+                name: "Cancelled_Cheque",
               },
               {
                 label: "Address Proof",
-                available: !!(
-                  vendor.proofOfAddressFileId &&
-                  String(vendor.proofOfAddressFileId).trim()
-                ),
+                fileId: vendor.proofOfAddressFileId,
+                name: "Address_Proof",
               },
               {
                 label: "MSMED Certificate",
-                available: !!(vendor.msmedFileId && String(vendor.msmedFileId).trim()),
+                fileId: vendor.msmedFileId,
+                name: "MSMED_Certificate",
               },
               {
                 label: "TAN Certificate",
-                available: !!(vendor.tanFileId && String(vendor.tanFileId).trim()),
+                fileId: vendor.tanFileId,
+                name: "TAN_Certificate",
               },
-            ].map((doc) => (
-              <div
-                key={doc.label}
-                className="flex items-center justify-between py-1.5 border-b last:border-0"
-              >
-                <div className="flex items-center gap-2">
-                  <FileTextIcon className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm">{doc.label}</span>
+            ].map((doc) => {
+              const isUploaded = !!(
+                doc.fileId && String(doc.fileId).trim().length > 0
+              );
+              return (
+                <div
+                  key={doc.label}
+                  className="flex items-center justify-between py-1.5 border-b last:border-0"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileTextIcon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{doc.label}</span>
+                  </div>
+                  {isUploaded ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                      onClick={async () => {
+                        try {
+                          let url: string | null = null;
+                          if (doc.fileId?.startsWith("data:")) {
+                            url = doc.fileId;
+                          } else if (doc.fileId) {
+                            url = await getVendorDocumentUrl(doc.fileId);
+                          }
+                          if (url) {
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.target = "_blank";
+                            link.download = `${getVendorFilename(vendor)}_${doc.name}.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            toast.success(`Opening ${doc.label}`);
+                          } else {
+                            toast.error("Document URL could not be opened.");
+                          }
+                        } catch (err) {
+                          console.error("Document download error:", err);
+                          toast.error("Could not download document.");
+                        }
+                      }}
+                    >
+                      <DownloadIcon className="w-3.5 h-3.5" />
+                      View / Download
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">
+                      Not uploaded
+                    </span>
+                  )}
                 </div>
-                {doc.available ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="gap-1.5 text-xs"
-                    onClick={() =>
-                      toast.info("Request physical files from the vendor.")
-                    }
-                  >
-                    <DownloadIcon className="w-3.5 h-3.5" />
-                    Download
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Not uploaded
-                  </span>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <Button
               size="sm"
-              className="w-full mt-2 gap-2"
-              variant="secondary"
+              className="w-full mt-2 gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+              variant="outline"
               disabled={countVendorDocuments(vendor) === 0}
-              onClick={() =>
-                toast.info("Request bulk files from the vendor.")
-              }
+              onClick={() => downloadVendorDocumentsZip(vendor)}
             >
               <DownloadIcon className="w-4 h-4" />
               Download All as ZIP
