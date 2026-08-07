@@ -72,11 +72,7 @@ function countVendorDocuments(vendor: Vendor): number {
   let n = 0;
   for (const field of VENDOR_DOC_FIELDS) {
     const id = vendor[field];
-    if (
-      typeof id === "string" &&
-      id.trim().length > 0 &&
-      !id.startsWith("local-")
-    ) {
+    if (typeof id === "string" && id.trim().length > 0) {
       n += 1;
     }
   }
@@ -660,24 +656,30 @@ function AdminDashboardInner({
   }, [load]);
 
   const filteredVendors = useMemo(() => {
-    return (vendors ?? []).filter((v) => {
-      const status = v.status ?? "pending";
-      const inQueue = admin.canCrud
-        ? true
-        : admin.queue.includes(status);
-      if (!inQueue) return false;
+    return (vendors ?? [])
+      .filter((v) => {
+        const status = v.status ?? "pending";
+        const inQueue = admin.canCrud
+          ? true
+          : admin.queue.includes(status);
+        if (!inQueue) return false;
 
-      const q = search.toLowerCase();
-      const matchSearch =
-        !search ||
-        (v.name ?? "").toLowerCase().includes(q) ||
-        (v.vrfNumber ?? "").toLowerCase().includes(q) ||
-        (v.panNumber ?? "").toLowerCase().includes(q) ||
-        (v.email ?? "").toLowerCase().includes(q);
-      const matchGst = gstFilter === "all" || v.gstStatus === gstFilter;
-      const matchStatus = statusFilter === "all" || status === statusFilter;
-      return matchSearch && matchGst && matchStatus;
-    });
+        const q = search.toLowerCase();
+        const matchSearch =
+          !search ||
+          (v.name ?? "").toLowerCase().includes(q) ||
+          (v.vrfNumber ?? "").toLowerCase().includes(q) ||
+          (v.panNumber ?? "").toLowerCase().includes(q) ||
+          (v.email ?? "").toLowerCase().includes(q);
+        const matchGst = gstFilter === "all" || v.gstStatus === gstFilter;
+        const matchStatus = statusFilter === "all" || status === statusFilter;
+        return matchSearch && matchGst && matchStatus;
+      })
+      .sort((a, b) => {
+        const vrfA = a.vrfNumber || "";
+        const vrfB = b.vrfNumber || "";
+        return vrfA.localeCompare(vrfB, undefined, { numeric: true });
+      });
   }, [vendors, search, gstFilter, statusFilter, admin]);
   const GST_OPTIONS = [
     "Regular",
