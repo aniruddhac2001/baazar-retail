@@ -791,14 +791,10 @@ function AdminDashboardInner({
           </div>
         </div>
 
-        {/* Super admin: only user CRUD + activity (no vendor table / stats) */}
-        {admin.canCrud ? (
-          <>
-            <ManageUsersPanel />
-            <ActivityPanel vendors={vendors ?? []} />
-          </>
-        ) : (
-          <>
+        {/* Manage Admin Accounts (Super Admin only) */}
+        {admin.canCrud && <ManageUsersPanel />}
+
+        {/* Stat Cards (All Admins) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
@@ -962,8 +958,9 @@ function AdminDashboardInner({
                 </table>
               </div>
             </Card>
-          </>
-        )}
+
+        {/* Activity Panel for Super Admin */}
+        {admin.canCrud && <ActivityPanel vendors={vendors ?? []} />}
       </div>
 
       <VendorProfileModal
