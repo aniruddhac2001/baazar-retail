@@ -5,6 +5,7 @@ import {
   getVendors,
   getVendorStats,
   updateVendorStatus,
+  deleteVendor,
 } from "@/lib/supabase/db";
 import type { Vendor } from "@/lib/supabase/types";
 import type { SafeAdmin, AdminUser, AdminActivity } from "../_lib/admins";
@@ -46,6 +47,7 @@ import {
   EyeIcon,
   FileTextIcon,
   SearchIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -178,6 +180,33 @@ function VendorProfileModal({
     handleStatus(next);
   };
 
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete vendor ${vendor.vrfNumber || vendor.name}? This will remove the record completely from Supabase database.`
+      )
+    )
+      return;
+    try {
+      await deleteVendor(vendor.id);
+      logAdminActivity({
+        adminId: admin.id,
+        adminName: admin.displayName,
+        adminRole: admin.role,
+        action: "deleted",
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        vrfNumber: vendor.vrfNumber || undefined,
+        detail: "Deleted vendor record from database",
+      });
+      toast.success("Vendor record permanently deleted.");
+      onStatusUpdated();
+      onClose();
+    } catch {
+      toast.error("Failed to delete vendor.");
+    }
+  };
+
   const fields: { label: string; value: string | undefined }[] = [
     { label: "Vendor ID", value: vendor.vrfNumber || undefined },
     { label: "Entity Name", value: vendor.name },
@@ -256,6 +285,17 @@ function VendorProfileModal({
                   onClick={() => handleStatus("rejected")}
                 >
                   Reject
+                </Button>
+              )}
+              {admin.canCrud && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleDelete}
+                >
+                  <Trash2Icon className="w-3.5 h-3.5" />
+                  Delete
                 </Button>
               )}
             </div>
@@ -879,16 +919,41 @@ function AdminDashboardInner({
                           <td className="px-4 py-3">
                             <StatusBadge status={v.status || undefined} />
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 flex items-center gap-1">
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="gap-1.5 text-xs"
+                              className="gap-1 text-xs"
                               onClick={() => setSelectedVendor(v)}
                             >
                               <EyeIcon className="w-3.5 h-3.5" />
                               View
                             </Button>
+                            {admin.canCrud && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={async () => {
+                                  if (
+                                    !confirm(
+                                      `Are you sure you want to permanently delete vendor ${v.vrfNumber || v.name} from Supabase database?`
+                                    )
+                                  )
+                                    return;
+                                  try {
+                                    await deleteVendor(v.id);
+                                    toast.success("Vendor record permanently deleted.");
+                                    load();
+                                  } catch {
+                                    toast.error("Failed to delete vendor.");
+                                  }
+                                }}
+                              >
+                                <Trash2Icon className="w-3.5 h-3.5" />
+                                Delete
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -901,14 +966,12 @@ function AdminDashboardInner({
         )}
       </div>
 
-      {!admin.canCrud && (
-        <VendorProfileModal
-          vendor={selectedVendor}
-          onClose={() => setSelectedVendor(null)}
-          onStatusUpdated={load}
-          admin={admin}
-        />
-      )}
+      <VendorProfileModal
+        vendor={selectedVendor}
+        onClose={() => setSelectedVendor(null)}
+        onStatusUpdated={load}
+        admin={admin}
+      />
     </div>
   );
 }

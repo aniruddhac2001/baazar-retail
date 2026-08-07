@@ -159,6 +159,12 @@ export async function searchVendors(query: string) {
   return (data as Vendor[]) ?? [];
 }
 
+export async function deleteVendor(id: string) {
+  const { error } = await supabase.from("vendors").delete().eq("id", id);
+  if (error) throw new Error(formatSupabaseError(error));
+  return true;
+}
+
 export async function updateVendorStatus(
   id: string,
   status: "pending" | "approved" | "rejected" | string
