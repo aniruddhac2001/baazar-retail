@@ -20,7 +20,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: "1",
     username: "baazarretail",
-    password: "BR@2026",
+    password: "BR@ADMIN",
     displayName: "Rohit Singh",
     role: "super",
     queue: [
@@ -36,7 +36,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: "2",
     username: "bk@account",
-    password: "BK@AC",
+    password: "ADMIN@AC",
     displayName: "Accounts",
     role: "accounts",
     queue: ["pending"],
@@ -46,7 +46,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: "3",
     username: "bk@gst",
-    password: "BK@GST",
+    password: "ADMIN@GST",
     displayName: "GST",
     role: "gst",
     queue: ["accounts_approved"],
@@ -56,7 +56,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: "4",
     username: "bk@it",
-    password: "BK@IT",
+    password: "ADMIN@IT",
     displayName: "IT",
     role: "it",
     queue: ["gst_approved"],
