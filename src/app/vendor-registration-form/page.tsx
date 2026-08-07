@@ -8,13 +8,15 @@ import { Step3 } from "./_components/step3";
 import { Step4 } from "./_components/step4";
 import { Step5 } from "./_components/step5";
 import { SuccessModal } from "./_components/success-modal";
+import { DuplicateWarningModal } from "./_components/duplicate-warning-modal";
 import { Navbar } from "@/components/ui/Navbar";
 import {
   type VendorFormData,
   defaultVendorFormData,
 } from "./_lib/types";
-import { submitVendorRegistration, updateVendorVrf } from "@/lib/supabase/db";
+import { submitVendorRegistration, updateVendorVrf, findDuplicateVendor } from "@/lib/supabase/db";
 import { generateVrfNumber } from "./_lib/vrf";
+import type { Vendor } from "@/lib/supabase/types";
 
 const TOTAL_STEPS = 5;
 const DRAFT_KEY = "baazar_vendor_registration_draft";
@@ -148,6 +150,8 @@ export default function VendorRegistrationPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof VendorFormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [duplicateVendor, setDuplicateVendor] = useState<Vendor | null>(null);
+  const [showDuplicate, setShowDuplicate] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [vrfNumber, setVrfNumber] = useState<string | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
@@ -214,6 +218,19 @@ export default function VendorRegistrationPage() {
     if (step === TOTAL_STEPS) {
       setSubmitting(true);
       try {
+        const existing = await findDuplicateVendor({
+          email: data.registeredEmail,
+          panNumber: data.panNumber,
+          gstin: data.gstin,
+        });
+
+        if (existing) {
+          setDuplicateVendor(existing);
+          setShowDuplicate(true);
+          setSubmitting(false);
+          return;
+        }
+
         const created = await submitVendorRegistration({
           // Step 1
           name: data.entityName,
@@ -443,6 +460,11 @@ export default function VendorRegistrationPage() {
         </div>
 
         <SuccessModal open={showSuccess} onClose={handleSuccessClose} vrfNumber={vrfNumber} />
+        <DuplicateWarningModal
+          open={showDuplicate}
+          onClose={() => setShowDuplicate(false)}
+          existingVendor={duplicateVendor}
+        />
       </main>
     </>
   );

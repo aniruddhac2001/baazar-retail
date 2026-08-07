@@ -49,6 +49,30 @@ export async function getVendors(): Promise<Vendor[]> {
   return (data as Vendor[]) ?? [];
 }
 
+export async function findDuplicateVendor(params: {
+  email?: string;
+  panNumber?: string;
+  gstin?: string;
+}): Promise<Vendor | null> {
+  const email = params.email?.trim().toLowerCase();
+  const pan = params.panNumber?.trim().toUpperCase();
+  const gstin = params.gstin?.trim().toUpperCase();
+
+  const vendors = await getVendors();
+  for (const v of vendors) {
+    if (email && v.email && v.email.trim().toLowerCase() === email) {
+      return v;
+    }
+    if (pan && v.panNumber && v.panNumber.trim().toUpperCase() === pan) {
+      return v;
+    }
+    if (gstin && v.gstin && v.gstin.trim().toUpperCase() === gstin) {
+      return v;
+    }
+  }
+  return null;
+}
+
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase.from("users").select("*");
   if (error) throw new Error(formatSupabaseError(error));
