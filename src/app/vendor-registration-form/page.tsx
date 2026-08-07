@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import { GradientBackground } from "@/components/ui/GradientBackground";
 import { Step1 } from "./_components/step1";
 import { Step2 } from "./_components/step2";
@@ -423,11 +424,19 @@ export default function VendorRegistrationPage() {
           )}
 
           <div className="rounded-3xl bg-white p-6 shadow-xl sm:p-8">
-            {step === 1 && <Step1 data={data} onChange={onChange} errors={errors} />}
-            {step === 2 && <Step2 data={data} onChange={onChange} errors={errors} />}
-            {step === 3 && <Step3 data={data} onChange={onChange} errors={errors} />}
-            {step === 4 && <Step4 data={data} onChange={onChange} errors={errors} />}
-            {step === 5 && <Step5 data={data} onChange={onChange} errors={errors} />}
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            >
+              {step === 1 && <Step1 data={data} onChange={onChange} errors={errors} />}
+              {step === 2 && <Step2 data={data} onChange={onChange} errors={errors} />}
+              {step === 3 && <Step3 data={data} onChange={onChange} errors={errors} />}
+              {step === 4 && <Step4 data={data} onChange={onChange} errors={errors} />}
+              {step === 5 && <Step5 data={data} onChange={onChange} errors={errors} />}
+            </motion.div>
 
             {submitError && (
               <p className="mt-4 text-sm text-rose-600">{submitError}</p>
