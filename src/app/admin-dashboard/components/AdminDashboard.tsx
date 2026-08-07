@@ -791,10 +791,14 @@ function AdminDashboardInner({
           </div>
         </div>
 
-        {/* Manage Admin Accounts (Super Admin only) */}
-        {admin.canCrud && <ManageUsersPanel />}
-
-        {/* Stat Cards (All Admins) */}
+        {admin.canCrud ? (
+          <>
+            <ManageUsersPanel />
+            <ActivityPanel vendors={vendors ?? []} />
+          </>
+        ) : (
+          <>
+            {/* Stat Cards (Desk Admins only) */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
@@ -839,8 +843,6 @@ function AdminDashboardInner({
                 </Card>
               ))}
             </div>
-
-            {/* Filter section removed for Accounts / GST / IT admins */}
 
             <Card className="shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -958,9 +960,8 @@ function AdminDashboardInner({
                 </table>
               </div>
             </Card>
-
-        {/* Activity Panel for Super Admin */}
-        {admin.canCrud && <ActivityPanel vendors={vendors ?? []} />}
+          </>
+        )}
       </div>
 
       <VendorProfileModal
