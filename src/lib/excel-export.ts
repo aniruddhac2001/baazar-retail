@@ -88,9 +88,13 @@ export function exportVendorsToExcel(
     "Employee Ref Name",
     "Employee Ref Contact",
     "Remarks",
-    "Status",
-    "Submitted At",
   ];
+
+  if (!isSuperAdminReport) {
+    headers.push("Status");
+  }
+
+  headers.push("Submitted At");
 
   if (isSuperAdminReport) {
     headers.push("Accounts Desk Status", "GST Desk Status", "IT Desk Status");
@@ -197,11 +201,17 @@ export function exportVendorsToExcel(
       v.employeeRefName ?? "—",
       v.employeeRefContact ? `+91 ${v.employeeRefContact}` : "—",
       v.remarks ?? "—",
-      v.status ?? "pending",
+    ];
+
+    if (!isSuperAdminReport) {
+      row.push(v.status ?? "pending");
+    }
+
+    row.push(
       v.created_at
         ? new Date(v.created_at).toLocaleDateString("en-IN")
-        : "—",
-    ];
+        : "—"
+    );
 
     if (isSuperAdminReport) {
       row.push(accountsStatus, gstStatus, itStatus);
