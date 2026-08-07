@@ -43,9 +43,9 @@ export function Step5({ data, onChange, errors }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Branch */}
-        <div className="space-y-1.5">
-          <Label>
-            Branch Name <span className="text-destructive">*</span>
+        <div className="space-y-1.5 flex flex-col justify-end">
+          <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
+            Branch Name <span className="text-destructive ml-1">*</span>
           </Label>
           <Input
             placeholder="Branch name"
@@ -57,9 +57,9 @@ export function Step5({ data, onChange, errors }: Props) {
           )}
         </div>
 
-        <div className="space-y-1.5">
-          <Label>
-            Branch Address <span className="text-destructive">*</span>
+        <div className="space-y-1.5 flex flex-col justify-end">
+          <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
+            Branch Address <span className="text-destructive ml-1">*</span>
           </Label>
           <Input
             placeholder="Branch address"
@@ -134,8 +134,10 @@ export function Step5({ data, onChange, errors }: Props) {
         )}
 
         {/* Vendor Contact */}
-        <div className="space-y-1.5">
-          <Label>Vendor Contact Person Number</Label>
+        <div className="space-y-1.5 flex flex-col justify-end">
+          <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
+            Vendor Contact Person Number
+          </Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
               +91
@@ -155,10 +157,10 @@ export function Step5({ data, onChange, errors }: Props) {
 
         {/* Employee Reference fields — directly displayed */}
         <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>
+          <div className="space-y-1.5 flex flex-col justify-end">
+            <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
               Mention Name of Baazar Retail Employee{" "}
-              <span className="text-destructive">*</span>
+              <span className="text-destructive ml-1">*</span>
             </Label>
             <Input
               placeholder="Employee name"
@@ -170,9 +172,9 @@ export function Step5({ data, onChange, errors }: Props) {
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label>
-              Contact Number <span className="text-destructive">*</span>
+          <div className="space-y-1.5 flex flex-col justify-end">
+            <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
+              Contact Number <span className="text-destructive ml-1">*</span>
             </Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
