@@ -153,103 +153,52 @@ export function Step5({ data, onChange, errors }: Props) {
           </div>
         </div>
 
-        {/* Reference from Baazar Retail — Yes / No */}
-        <div className="sm:col-span-2 space-y-1.5">
-          <Label>
-            Reference from Baazar Retail Private Limited{" "}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={
-              data.hasBaazarReference === true
-                ? "Yes"
-                : data.hasBaazarReference === false
-                  ? "No"
-                  : ""
-            }
-            onValueChange={(v) => {
-              if (v === "Yes") {
-                onChange({ hasBaazarReference: true });
-              } else {
-                onChange({
-                  hasBaazarReference: false,
-                  employeeRefName: "",
-                  employeeRefContact: "",
-                });
-              }
-            }}
-          >
-            <SelectTrigger className="max-w-xs">
-              <SelectValue placeholder="Select Yes / No" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Yes">Yes</SelectItem>
-              <SelectItem value="No">No</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.hasBaazarReference && (
-            <p className="text-xs text-destructive">
-              {errors.hasBaazarReference}
-            </p>
-          )}
+        {/* Employee Reference fields — directly displayed */}
+        <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>
+              Mention Name of Baazar Retail Employee{" "}
+              <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              placeholder="Employee name"
+              value={data.employeeRefName}
+              onChange={(e) => onChange({ employeeRefName: e.target.value, hasBaazarReference: true })}
+            />
+            {errors.employeeRefName && (
+              <p className="text-xs text-destructive">{errors.employeeRefName}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>
+              Contact Number <span className="text-destructive">*</span>
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                +91
+              </span>
+              <Input
+                className="pl-12"
+                placeholder="XXXXX XXXXX"
+                value={displayPhone(data.employeeRefContact)}
+                onChange={(e) =>
+                  onChange({
+                    employeeRefContact: formatPhone(e.target.value),
+                    hasBaazarReference: true,
+                  })
+                }
+                maxLength={10}
+                inputMode="numeric"
+              />
+            </div>
+            {errors.employeeRefContact && (
+              <p className="text-xs text-destructive">
+                {errors.employeeRefContact}
+              </p>
+            )}
+          </div>
         </div>
-
-        {/* Employee fields — only when Yes */}
-        <AnimatePresence>
-          {data.hasBaazarReference === true && (
-            <motion.div
-              key="baazar-ref-fields"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-hidden"
-            >
-              <div className="space-y-1.5">
-                <Label>
-                  Mention Name of Baazar Retail Employee{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  placeholder="Employee name"
-                  value={data.employeeRefName}
-                  onChange={(e) => onChange({ employeeRefName: e.target.value })}
-                />
-                {errors.employeeRefName && (
-                  <p className="text-xs text-destructive">{errors.employeeRefName}</p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>
-                  Contact Number <span className="text-destructive">*</span>
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
-                    +91
-                  </span>
-                  <Input
-                    className="pl-12"
-                    placeholder="XXXXX XXXXX"
-                    value={displayPhone(data.employeeRefContact)}
-                    onChange={(e) =>
-                      onChange({
-                        employeeRefContact: formatPhone(e.target.value),
-                      })
-                    }
-                    maxLength={10}
-                    inputMode="numeric"
-                  />
-                </div>
-                {errors.employeeRefContact && (
-                  <p className="text-xs text-destructive">
-                    {errors.employeeRefContact}
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Remarks */}
         <div className="sm:col-span-2 space-y-1.5">
@@ -269,13 +218,14 @@ export function Step5({ data, onChange, errors }: Props) {
             <p className="text-sm font-semibold text-slate-800">
               Non-Disclosure Agreement
             </p>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden max-h-56 overflow-y-auto">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto p-2">
               <Image
-                src="/nda.png"
+                src="/Non.png"
                 alt="Non-Disclosure Agreement"
                 width={800}
                 height={1100}
                 className="w-full h-auto object-contain"
+                unoptimized
               />
             </div>
             <div className="flex items-start gap-3 pt-1">
@@ -305,13 +255,14 @@ export function Step5({ data, onChange, errors }: Props) {
             <p className="text-sm font-semibold text-slate-800">
               Standard Terms of Business
             </p>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden max-h-56 overflow-y-auto">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto p-2">
               <Image
-                src="/standard-terms.jpg"
+                src="/Standard.jpg"
                 alt="Standard Terms of Business"
                 width={900}
                 height={600}
                 className="w-full h-auto object-contain"
+                unoptimized
               />
             </div>
             <div className="flex items-start gap-3 pt-1">
