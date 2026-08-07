@@ -30,7 +30,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "Vendor ID",
     "Entity Name",
     "Entity Type",
-    "", // Blank spacer column D
 
     // Group 2: Registered Address & Phone
     "Registered Address",
@@ -40,7 +39,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "Registered Phone",
     "Additional Phone",
     "Registered Email",
-    "", // Blank spacer column L
 
     // Group 3: Communication Address
     "Same as Registered",
@@ -50,7 +48,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "Comm PIN",
     "Comm Phone",
     "Comm Email",
-    "", // Blank spacer column U
 
     // Group 4: Tax & Statutory
     "PAN Number",
@@ -61,7 +58,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "GST Reg Date",
     "Place of Business",
     "Proof of Address Type",
-    "", // Blank spacer column AD
 
     // Group 5: MSMED & Banking
     "Is MSMED",
@@ -73,7 +69,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "Name on Account",
     "Branch Name",
     "Branch Address",
-    "", // Blank spacer column AN
 
     // Group 6: Operational & Reference Details
     "Goods/Services",
@@ -95,7 +90,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
       v.vrfNumber ?? "—",
       v.name ?? "—",
       v.entityType ?? "—",
-      "", // Blank spacer column
 
       // Group 2
       v.address ?? "—",
@@ -105,7 +99,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
       v.phone ? `+91 ${v.phone}` : "—",
       v.registeredPhoneAdditional ? `+91 ${v.registeredPhoneAdditional}` : "—",
       v.email ?? "—",
-      "", // Blank spacer column
 
       // Group 3
       v.sameAsRegistered ? "Yes" : "No",
@@ -115,7 +108,6 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
       v.sameAsRegistered ? "—" : v.commPinCode ?? "—",
       v.sameAsRegistered ? "—" : v.commPhone ? `+91 ${v.commPhone}` : "—",
       v.sameAsRegistered ? "—" : v.commEmail ?? "—",
-      "", // Blank spacer column
 
       // Group 4
       v.panNumber ?? "—",
@@ -126,19 +118,17 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
       v.gstRegistrationDate ?? "—",
       v.placeOfBusiness ?? "—",
       v.proofOfAddressType ?? "—",
-      "", // Blank spacer column
 
       // Group 5
       v.isMsmed ? "Yes" : "No",
       v.isMsmed ? v.msmedType ?? "—" : "—",
       v.isMsmed ? v.msmedLineOfBusiness ?? "—" : "—",
       v.bankName ?? "—",
-      v.accountNumber ?? "—",
+      v.accountNumber ? String(v.accountNumber) : "—",
       v.ifscCode ?? "—",
       v.chequeLabel ?? "—",
       v.branchName ?? "—",
       v.branchAddress ?? "—",
-      "", // Blank spacer column
 
       // Group 6
       Array.isArray(v.goodsServices)
@@ -160,10 +150,22 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Set appropriate column widths
-  ws["!cols"] = headers.map((h) => {
-    if (h === "") return { wch: 4 }; // Blank spacer column
-    return { wch: Math.max(h.length + 4, 16) };
-  });
+  ws["!cols"] = headers.map((h) => ({
+    wch: Math.max(h.length + 4, 16),
+  }));
+
+  // Force Account Number column to Text format ('s' type and '@' format)
+  const accountNumColIdx = headers.indexOf("Account Number");
+  if (accountNumColIdx !== -1 && ws["!ref"]) {
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: accountNumColIdx });
+      if (ws[cellAddress]) {
+        ws[cellAddress].t = "s";
+        ws[cellAddress].z = "@";
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, "Vendors");
   XLSX.writeFile(wb, fileName);
