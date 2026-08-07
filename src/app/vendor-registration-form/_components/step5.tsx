@@ -72,10 +72,10 @@ export function Step5({ data, onChange, errors }: Props) {
         </div>
 
         {/* Goods / Services Dropdown */}
-        <div className="space-y-1.5">
-          <Label>
+        <div className="space-y-1.5 flex flex-col justify-end">
+          <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
             Goods / Services provided to Baazar Retail Limited{" "}
-            <span className="text-destructive">*</span>
+            <span className="text-destructive ml-1">*</span>
           </Label>
           <Select
             value={data.goodsServices[0] || ""}
@@ -106,9 +106,9 @@ export function Step5({ data, onChange, errors }: Props) {
 
         {/* Department Trading — visible only for Trading Goods */}
         {showDepartmentTrading && (
-          <div className="space-y-1.5">
-            <Label>
-              Department Trading <span className="text-destructive">*</span>
+          <div className="space-y-1.5 flex flex-col justify-end">
+            <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
+              Department Trading <span className="text-destructive ml-1">*</span>
             </Label>
             <Select
               value={data.departmentTrading}
