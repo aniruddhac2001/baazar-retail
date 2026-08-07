@@ -757,9 +757,37 @@ function AdminDashboardInner({
   }, [load]);
 
   const filteredVendors = useMemo(() => {
+    const activities = getAdminActivity();
+    const getRejectionRole = (v: Vendor): string => {
+      if (v.status !== "rejected") return "";
+      const rej = activities.find(
+        (a) =>
+          a.action === "rejected" &&
+          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber))
+      );
+      return rej?.adminRole ?? "accounts";
+    };
+
     return (vendors ?? [])
       .filter((v) => {
         const status = v.status ?? "pending";
+
+        // Desk pipeline access control:
+        if (admin.role === "gst") {
+          // GST desk only sees applications that reached GST desk
+          if (status === "pending") return false;
+          if (status === "rejected") {
+            const rejRole = getRejectionRole(v);
+            if (rejRole === "accounts") return false; // Rejected at Accounts before reaching GST
+          }
+        } else if (admin.role === "it") {
+          // IT desk only sees applications that reached IT desk
+          if (status === "pending" || status === "accounts_approved") return false;
+          if (status === "rejected") {
+            const rejRole = getRejectionRole(v);
+            if (rejRole !== "it") return false; // Rejected before reaching IT
+          }
+        }
 
         const q = search.toLowerCase();
         const matchSearch =
