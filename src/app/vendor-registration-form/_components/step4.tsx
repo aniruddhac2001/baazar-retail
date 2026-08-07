@@ -1,9 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -13,84 +11,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { motion, AnimatePresence } from "motion/react";
-import { UploadIcon } from "lucide-react";
-import type { VendorFormData, UploadedFileRef } from "../_lib/types";
+import type { VendorFormData } from "../_lib/types";
 import { MSMED_TYPES } from "../_lib/types";
 import { formatIfsc } from "../_lib/formatters";
-import { uploadVendorDocument } from "@/lib/supabase/storage";
+import { FileUploadField } from "./file-upload-field";
 
 type Props = {
   data: VendorFormData;
   onChange: (updates: Partial<VendorFormData>) => void;
   errors: Partial<Record<keyof VendorFormData, string>>;
 };
-
-function FileUploadButton({
-  label,
-  file,
-  folder,
-  onFile,
-}: {
-  label: string;
-  file: UploadedFileRef;
-  folder: string;
-  onFile: (ref: NonNullable<UploadedFileRef>) => void;
-}) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    setUploading(true);
-    setProgress(0);
-    setError(null);
-    try {
-      const result = await uploadVendorDocument(f, folder, setProgress);
-      onFile({ storageId: result.storageId, fileName: result.fileName });
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  if (file?.fileName && !uploading) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
-        <span className="truncate font-medium text-slate-800">{file.fileName}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-1">
-      <input
-        ref={ref}
-        type="file"
-        accept=".pdf,application/pdf"
-        className="hidden"
-        onChange={handleChange}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="gap-2"
-        disabled={uploading}
-        onClick={() => ref.current?.click()}
-      >
-        <UploadIcon className="w-4 h-4" />
-        {uploading ? `Uploading… ${progress}%` : label}
-      </Button>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-  );
-}
 
 export function Step4({ data, onChange, errors }: Props) {
   return (
@@ -158,11 +88,15 @@ export function Step4({ data, onChange, errors }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label>Upload MSMED Certificate PDF</Label>
-                <FileUploadButton
+                <FileUploadField
                   label="Upload MSMED PDF"
-                  file={data.msmedFile}
                   folder="msmed"
-                  onFile={(f) => onChange({ msmedFile: f })}
+                  storageId={data.msmedFile?.storageId ?? null}
+                  fileName={data.msmedFile?.fileName ?? null}
+                  onUploadComplete={(storageId, fileName) =>
+                    onChange({ msmedFile: { storageId, fileName } })
+                  }
+                  onRemove={() => onChange({ msmedFile: null })}
                 />
               </div>
             </div>
@@ -245,11 +179,15 @@ export function Step4({ data, onChange, errors }: Props) {
 
           <div className="space-y-1.5">
             <Label>Upload Cancelled Cheque PDF</Label>
-            <FileUploadButton
+            <FileUploadField
               label="Upload Cancelled Cheque PDF"
-              file={data.chequeFile}
               folder="cheque"
-              onFile={(f) => onChange({ chequeFile: f })}
+              storageId={data.chequeFile?.storageId ?? null}
+              fileName={data.chequeFile?.fileName ?? null}
+              onUploadComplete={(storageId, fileName) =>
+                onChange({ chequeFile: { storageId, fileName } })
+              }
+              onRemove={() => onChange({ chequeFile: null })}
             />
           </div>
         </div>

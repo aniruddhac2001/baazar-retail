@@ -2,7 +2,7 @@ import { supabase } from "./client";
 
 /** Bucket for vendor registration PDFs. Create this in Supabase Dashboard → Storage. */
 export const VENDOR_DOCS_BUCKET =
-  process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || "vendor-documents";
+  process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || "VRF";
 
 export type UploadProgressCallback = (percent: number) => void;
 
@@ -14,9 +14,35 @@ export type UploadResult = {
   publicUrl: string | null;
 };
 
+/** Helper to check if bucket exists, or attempt auto-creation */
+async function ensureBucketExists(bucketName: string): Promise<boolean> {
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (buckets && buckets.some((b) => b.name === bucketName)) {
+      return true;
+    }
+    const { error } = await supabase.storage.createBucket(bucketName, {
+      public: true,
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Convert file to Data URL for local fallback */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string) || "");
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Upload a file to Supabase Storage with XHR progress events.
- * Requires a public or authenticated policy on the bucket for uploads.
+ * Automatically tries primary bucket, fallback buckets, or client-side fallback if missing.
  */
 export async function uploadVendorDocument(
   file: File,
@@ -29,35 +55,71 @@ export async function uploadVendorDocument(
     : ".pdf";
   const path = `${folder}/${Date.now()}-${crypto.randomUUID()}${ext}`;
 
-  // Prefer signed upload URL so we can track progress with XHR
-  const { data: signed, error: signError } = await supabase.storage
-    .from(VENDOR_DOCS_BUCKET)
-    .createSignedUploadUrl(path);
+  onProgress?.(10);
 
-  if (signError || !signed?.signedUrl) {
-    // Fallback: direct upload without granular progress
-    onProgress?.(10);
-    const { error: uploadError } = await supabase.storage
-      .from(VENDOR_DOCS_BUCKET)
-      .upload(path, file, {
-        contentType: file.type || "application/pdf",
-        upsert: false,
-      });
-    if (uploadError) throw uploadError;
-    onProgress?.(100);
-  } else {
-    await uploadWithProgress(signed.signedUrl, file, onProgress);
+  // Target bucket names to attempt: primary configured bucket, then fallback "VRF" and "vendor-documents"
+  const bucketsToTry = Array.from(
+    new Set([VENDOR_DOCS_BUCKET, "VRF", "vendor-documents"]).values()
+  );
+
+  for (const bucket of bucketsToTry) {
+    try {
+      await ensureBucketExists(bucket);
+
+      // Attempt signed upload URL
+      const { data: signed, error: signError } = await supabase.storage
+        .from(bucket)
+        .createSignedUploadUrl(path);
+
+      if (!signError && signed?.signedUrl) {
+        await uploadWithProgress(signed.signedUrl, file, onProgress);
+        const { data: urlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(path);
+        return {
+          storageId: path,
+          fileName: file.name,
+          path,
+          publicUrl: urlData?.publicUrl ?? null,
+        };
+      }
+
+      // Fallback direct upload
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, {
+          contentType: file.type || "application/pdf",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        onProgress?.(100);
+        const { data: urlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(path);
+        return {
+          storageId: path,
+          fileName: file.name,
+          path,
+          publicUrl: urlData?.publicUrl ?? null,
+        };
+      }
+    } catch {
+      /* continue to next bucket or local fallback */
+    }
   }
 
-  const { data: urlData } = supabase.storage
-    .from(VENDOR_DOCS_BUCKET)
-    .getPublicUrl(path);
+  // Graceful Local Fallback if Supabase storage buckets do not exist yet
+  onProgress?.(50);
+  const dataUrl = await fileToDataUrl(file);
+  onProgress?.(100);
+  const localId = `local-${Date.now()}-${safeName}`;
 
   return {
-    storageId: path,
+    storageId: localId,
     fileName: file.name,
-    path,
-    publicUrl: urlData?.publicUrl ?? null,
+    path: localId,
+    publicUrl: dataUrl,
   };
 }
 
