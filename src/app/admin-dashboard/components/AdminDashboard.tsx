@@ -36,7 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { exportVendorsToExcel, getVendorFilename } from "@/lib/excel-export";
+import { exportVendorsToExcel, getVendorFilename, downloadVendorDocumentsZip } from "@/lib/excel-export";
 import {
   ShieldAlertIcon,
   UsersIcon,
@@ -228,6 +228,17 @@ function VendorProfileModal({
               <StatusBadge status={vendor.status || undefined} />
             </div>
             <div className="flex gap-2">
+              {!admin.canCrud && countVendorDocuments(vendor) > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  onClick={() => downloadVendorDocumentsZip(vendor)}
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  Download ZIP
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -526,7 +537,7 @@ function ManageUsersPanel() {
   );
 }
 
-function ActivityPanel() {
+function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
   const [items, setItems] = useState<AdminActivity[]>([]);
 
   const refresh = () => setItems(getAdminActivity());
@@ -547,9 +558,26 @@ function ActivityPanel() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <CardTitle className="text-base">Other Admins&apos; Activity</CardTitle>
-          <Button size="sm" variant="outline" onClick={handleClear}>
-            Clear log
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+              onClick={() => {
+                if (!vendors || vendors.length === 0) {
+                  toast.error("No vendor details to export.");
+                  return;
+                }
+                exportVendorsToExcel(vendors, { isSuperAdminReport: true });
+                toast.success("Exported Super Admin report with desk statuses.");
+              }}
+            >
+              <DownloadIcon className="w-3.5 h-3.5" />
+              Export Excel Report
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleClear}>
+              Clear log
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
           Approvals and rejections by Accounts, GST and IT desks.
@@ -727,7 +755,7 @@ function AdminDashboardInner({
         {admin.canCrud ? (
           <>
             <ManageUsersPanel />
-            <ActivityPanel />
+            <ActivityPanel vendors={vendors ?? []} />
           </>
         ) : (
           <>
@@ -752,7 +780,7 @@ function AdminDashboardInner({
                 },
                 {
                   label: "Documents Uploaded",
-                  value: countAllDocuments(vendors ?? []),
+                  value: countAllDocuments(filteredVendors),
                   icon: <FileTextIcon className="w-5 h-5 text-blue-500" />,
                 },
               ].map((card) => (

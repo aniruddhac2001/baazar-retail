@@ -1,5 +1,8 @@
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
 import type { Vendor } from "@/lib/supabase/types";
+import { getVendorDocumentUrl } from "./supabase/storage";
+import { toast } from "sonner";
 
 /**
  * Sanitizes VRF Number / Vendor Unique ID for a safe filename.
@@ -11,19 +14,25 @@ export function getVendorFilename(vendor: Vendor): string {
 }
 
 /**
- * Exports single or multiple vendors to an Excel (.xlsx) file in horizontal tabular format
- * matching Image 1 layout with blank spacer columns between major sections.
- * The file name is set to the Vendor Unique ID when exporting a single vendor.
+ * Exports vendors to an Excel (.xlsx) file.
+ * If isSuperAdminReport is true, appends 3 extra columns after Submitted At:
+ * Accounts Desk Status, GST Desk Status, IT Desk Status.
  */
-export function exportVendorsToExcel(vendors: Vendor[]) {
+export function exportVendorsToExcel(
+  vendors: Vendor[],
+  options?: { isSuperAdminReport?: boolean }
+) {
   if (!vendors || vendors.length === 0) return;
 
+  const isSuperAdminReport = options?.isSuperAdminReport ?? false;
   const wb = XLSX.utils.book_new();
 
   const fileName =
     vendors.length === 1
       ? `${getVendorFilename(vendors[0])}.xlsx`
-      : `baazar-vendors-export-${new Date().toISOString().split("T")[0]}.xlsx`;
+      : isSuperAdminReport
+        ? `baazar-super-admin-report-${new Date().toISOString().split("T")[0]}.xlsx`
+        : `baazar-vendors-export-${new Date().toISOString().split("T")[0]}.xlsx`;
 
   const headers = [
     // Group 1: Basic & Entity
@@ -82,10 +91,37 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
     "Submitted At",
   ];
 
+  if (isSuperAdminReport) {
+    headers.push("Accounts Desk Status", "GST Desk Status", "IT Desk Status");
+  }
+
   const rows: (string | number)[][] = [headers];
 
   vendors.forEach((v) => {
-    rows.push([
+    const status = v.status ?? "pending";
+    let accountsStatus = "Pending";
+    let gstStatus = "Pending";
+    let itStatus = "Pending";
+
+    if (status === "accounts_approved") {
+      accountsStatus = "Approved";
+      gstStatus = "Pending";
+      itStatus = "Pending";
+    } else if (status === "gst_approved") {
+      accountsStatus = "Approved";
+      gstStatus = "Approved";
+      itStatus = "Pending";
+    } else if (status === "approved") {
+      accountsStatus = "Approved";
+      gstStatus = "Approved";
+      itStatus = "Approved";
+    } else if (status === "rejected") {
+      accountsStatus = "Rejected";
+      gstStatus = "Rejected";
+      itStatus = "Rejected";
+    }
+
+    const row: (string | number)[] = [
       // Group 1
       v.vrfNumber ?? "—",
       v.name ?? "—",
@@ -144,17 +180,21 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
       v.created_at
         ? new Date(v.created_at).toLocaleDateString("en-IN")
         : "—",
-    ]);
+    ];
+
+    if (isSuperAdminReport) {
+      row.push(accountsStatus, gstStatus, itStatus);
+    }
+
+    rows.push(row);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  // Set appropriate column widths
   ws["!cols"] = headers.map((h) => ({
     wch: Math.max(h.length + 4, 16),
   }));
 
-  // Force Account Number column to Text format ('s' type and '@' format)
   const accountNumColIdx = headers.indexOf("Account Number");
   if (accountNumColIdx !== -1 && ws["!ref"]) {
     const range = XLSX.utils.decode_range(ws["!ref"]);
@@ -169,4 +209,64 @@ export function exportVendorsToExcel(vendors: Vendor[]) {
 
   XLSX.utils.book_append_sheet(wb, ws, "Vendors");
   XLSX.writeFile(wb, fileName);
+}
+
+/**
+ * Downloads all uploaded documents for a vendor as a single .zip file.
+ * Available for Accounts, GST, and IT desk admins.
+ */
+export async function downloadVendorDocumentsZip(vendor: Vendor) {
+  const fields = [
+    { key: "panFileId", name: "PAN_Certificate" },
+    { key: "gstFileId", name: "GST_Certificate" },
+    { key: "chequeFileId", name: "Cancelled_Cheque" },
+    { key: "proofOfAddressFileId", name: "Address_Proof" },
+    { key: "msmedFileId", name: "MSMED_Certificate" },
+    { key: "tanFileId", name: "TAN_Certificate" },
+  ] as const;
+
+  const zip = new JSZip();
+  let count = 0;
+
+  for (const { key, name } of fields) {
+    const fileId = vendor[key];
+    if (typeof fileId === "string" && fileId.trim().length > 0) {
+      try {
+        let blob: Blob | null = null;
+        if (fileId.startsWith("data:")) {
+          const res = await fetch(fileId);
+          blob = await res.blob();
+        } else {
+          const url = await getVendorDocumentUrl(fileId);
+          if (url) {
+            const res = await fetch(url);
+            blob = await res.blob();
+          }
+        }
+        if (blob) {
+          zip.file(`${name}.pdf`, blob);
+          count++;
+        }
+      } catch (err) {
+        console.warn(`Could not load document ${name}:`, err);
+      }
+    }
+  }
+
+  if (count === 0) {
+    toast.error("No uploaded documents found for this vendor.");
+    return;
+  }
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const filename = `${getVendorFilename(vendor)}_documents.zip`;
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(content);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+  toast.success(`Downloaded ${filename}`);
 }
