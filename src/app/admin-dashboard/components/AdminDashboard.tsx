@@ -763,19 +763,21 @@ function AdminDashboardInner({
               {[
                 {
                   label: "Total Submissions",
-                  value: stats?.total ?? 0,
+                  value: filteredVendors.length,
                   icon: (
                     <UsersIcon className="w-5 h-5" style={{ color: "#FF6B00" }} />
                   ),
                 },
                 {
                   label: "Pending Approvals",
-                  value: stats?.pending ?? 0,
+                  value: filteredVendors.filter(
+                    (v) => (v.status ?? "pending") !== "approved" && v.status !== "rejected"
+                  ).length,
                   icon: <ClockIcon className="w-5 h-5 text-yellow-500" />,
                 },
                 {
                   label: "Verified Vendors",
-                  value: stats?.approved ?? 0,
+                  value: filteredVendors.filter((v) => v.status === "approved").length,
                   icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
                 },
                 {
