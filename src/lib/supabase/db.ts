@@ -168,13 +168,35 @@ export async function deleteVendor(id: string) {
 export async function updateVendorStatus(
   id: string,
   status: "pending" | "approved" | "rejected" | string,
+  adminInfo?: {
+    adminName?: string;
+    adminRole?: string;
+    stage?: string;
+  },
 ) {
+  const updatePayload: Record<string, unknown> = { status };
+  if (adminInfo) {
+    if (adminInfo.adminName) updatePayload.lastActionBy = adminInfo.adminName;
+    if (adminInfo.adminRole) updatePayload.lastActionRole = adminInfo.adminRole;
+    if (status === "rejected") {
+      if (adminInfo.adminName) updatePayload.rejectedBy = adminInfo.adminName;
+      if (adminInfo.adminRole) updatePayload.rejectedRole = adminInfo.adminRole;
+      if (adminInfo.stage) updatePayload.rejectedAtStage = adminInfo.stage;
+    }
+  }
+
+  const cleanPayload = sanitizeVendorPayload(updatePayload);
+  if (Object.keys(cleanPayload).length === 0) {
+    cleanPayload.status = status;
+  }
+
   const { data, error } = await supabase
     .from("vendors")
-    .update({ status })
+    .update(cleanPayload)
     .eq("id", id)
     .select()
     .single();
+
   if (error) throw new Error(formatSupabaseError(error));
   return data as Vendor;
 }

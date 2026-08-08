@@ -8,7 +8,7 @@ import {
   deleteVendor,
 } from "@/lib/supabase/db";
 import type { Vendor } from "@/lib/supabase/types";
-import type { SafeAdmin, AdminUser, AdminActivity } from "../_lib/admins";
+import type { SafeAdmin, AdminUser, AdminActivity, AdminRole } from "../_lib/admins";
 import {
   statusLabel,
   roleLabel,
@@ -148,7 +148,11 @@ function VendorProfileModal({
 
   const handleStatus = async (status: VendorStatus) => {
     try {
-      await updateVendorStatus(vendor.id, status);
+      await updateVendorStatus(vendor.id, status, {
+        adminName: admin.displayName,
+        adminRole: admin.role,
+        stage: admin.role,
+      });
       const action =
         status === "rejected"
           ? "rejected"
@@ -673,11 +677,18 @@ function RejectionBreakdownPanel({
           a.action === "rejected" &&
           (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
       );
-      const role = rejAct?.adminRole;
-      if (role === "accounts") accounts++;
-      else if (role === "gst") gst++;
+      let role = rejAct?.adminRole;
+      if (!role) {
+        const rejRole = (v.rejectedRole || v.rejectedAtStage || "").toLowerCase();
+        const rem = (v.remarks || "").toLowerCase();
+        if (rejRole === "gst" || rem.includes("gst")) role = "gst";
+        else if (rejRole === "it" || rem.includes("it")) role = "it";
+        else role = "accounts";
+      }
+
+      if (role === "gst") gst++;
       else if (role === "it") it++;
-      else accounts++; // default to accounts if rejected at stage 1
+      else accounts++;
     });
 
     return { total: rejectedVendors.length, accounts, gst, it };
@@ -753,9 +764,17 @@ function RejectionBreakdownPanel({
                   (a.vendorId === v.id ||
                     (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
               );
-              const rejBy = rejAct
-                ? `${rejAct.adminName} (${roleLabel(rejAct.adminRole)})`
-                : "Accounts Desk";
+              let rejBy = "Accounts Desk";
+              if (rejAct) {
+                rejBy = `${rejAct.adminName} (${roleLabel(rejAct.adminRole)})`;
+              } else if (v.rejectedBy) {
+                rejBy = `${v.rejectedBy} (${roleLabel((v.rejectedRole as AdminRole) || "accounts")})`;
+              } else {
+                const rem = (v.remarks || "").toLowerCase();
+                if (rem.includes("gst")) rejBy = "GST Desk";
+                else if (rem.includes("it")) rejBy = "IT Desk";
+                else rejBy = "Accounts Desk";
+              }
               return (
                 <div
                   key={v.id}
@@ -991,6 +1010,10 @@ function AdminDashboardInner({
 
   useEffect(() => {
     load();
+    const interval = setInterval(() => {
+      load();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [load]);
 
   const filteredVendors = useMemo(() => {

@@ -51,6 +51,11 @@ export const VENDOR_TABLE_COLUMNS = [
   "remarks",
   "status",
   "vrfNumber",
+  "rejectedBy",
+  "rejectedRole",
+  "rejectedAtStage",
+  "lastActionBy",
+  "lastActionRole",
 ] as const;
 
 export type VendorColumn = (typeof VENDOR_TABLE_COLUMNS)[number];
@@ -104,6 +109,11 @@ export interface Vendor {
   remarks?: string | null;
   status?: "pending" | "approved" | "rejected" | string | null;
   vrfNumber?: string | null;
+  rejectedBy?: string | null;
+  rejectedRole?: string | null;
+  rejectedAtStage?: string | null;
+  lastActionBy?: string | null;
+  lastActionRole?: string | null;
   created_at?: string | null;
 }
 

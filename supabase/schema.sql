@@ -110,6 +110,11 @@ alter table public.vendors add column if not exists "vendorContactPerson" text;
 alter table public.vendors add column if not exists remarks text;
 alter table public.vendors add column if not exists status text default 'pending';
 alter table public.vendors add column if not exists "vrfNumber" text;
+alter table public.vendors add column if not exists "rejectedBy" text;
+alter table public.vendors add column if not exists "rejectedRole" text;
+alter table public.vendors add column if not exists "rejectedAtStage" text;
+alter table public.vendors add column if not exists "lastActionBy" text;
+alter table public.vendors add column if not exists "lastActionRole" text;
 alter table public.vendors add column if not exists created_at timestamptz default now();
 
 -- Do NOT add: category, state, description, website, routingNumber

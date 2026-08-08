@@ -300,17 +300,40 @@ export async function fetchAdminActivityAsync(
               (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
         );
         if (!hasRej) {
+          let role: AdminRole = "accounts";
+          let name = "Accounts Desk";
+          let adminId = "2";
+
+          const rejRole = (v.rejectedRole || v.rejectedAtStage || "").toLowerCase();
+          const rem = (v.remarks || "").toLowerCase();
+
+          if (rejRole === "gst" || rem.includes("gst")) {
+            role = "gst";
+            name = v.rejectedBy || "GST Desk";
+            adminId = "3";
+          } else if (rejRole === "it" || rem.includes("it")) {
+            role = "it";
+            name = v.rejectedBy || "IT Desk";
+            adminId = "4";
+          } else if (rejRole === "super" || rem.includes("super")) {
+            role = "super";
+            name = v.rejectedBy || "Super Admin";
+            adminId = "1";
+          } else if (v.rejectedBy) {
+            name = v.rejectedBy;
+          }
+
           const synthItem: AdminActivity = {
             id: `synth-rej-${v.id}`,
             at: v.created_at || new Date().toISOString(),
-            adminId: "2",
-            adminName: "Accounts",
-            adminRole: "accounts",
+            adminId,
+            adminName: name,
+            adminRole: role,
             action: "rejected",
             vendorId: v.id,
             vendorName: v.name,
             vrfNumber: v.vrfNumber || undefined,
-            detail: "Rejected (Synced from Database)",
+            detail: `Rejected (${roleLabel(role)} Stage)`,
           };
           combined.unshift(synthItem);
         }
