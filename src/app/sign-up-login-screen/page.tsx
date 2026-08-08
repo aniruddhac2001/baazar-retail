@@ -1,5 +1,5 @@
-import AuthScreen from "./components/AuthScreen"
+import AuthScreen from "./components/AuthScreen";
 
 export default function SignUpLoginPage() {
-  return <AuthScreen />
+  return <AuthScreen />;
 }

@@ -73,7 +73,7 @@ export function FileUploadField({
       setUploadState("error");
       setProgress(0);
       setErrorMessage(
-        err instanceof Error ? err.message : "Upload failed. Please try again."
+        err instanceof Error ? err.message : "Upload failed. Please try again.",
       );
     }
   };

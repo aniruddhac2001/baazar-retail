@@ -1,3 +1,3 @@
 export default function AdminLoginForm() {
-  return <div>AdminLoginForm Component</div>
+  return <div>AdminLoginForm Component</div>;
 }

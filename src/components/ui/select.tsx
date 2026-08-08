@@ -40,7 +40,7 @@ function Select({ value = "", onValueChange, children }: SelectProps) {
       onValueChange?.(v);
       setOpen(false);
     },
-    [onValueChange]
+    [onValueChange],
   );
 
   return (
@@ -60,7 +60,11 @@ type SelectTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children?: React.ReactNode;
 };
 
-function SelectTrigger({ className = "", children, ...props }: SelectTriggerProps) {
+function SelectTrigger({
+  className = "",
+  children,
+  ...props
+}: SelectTriggerProps) {
   const { open, setOpen } = useSelectContext();
   return (
     <button
@@ -107,7 +111,11 @@ type SelectValueProps = {
 function SelectValue({ placeholder }: SelectValueProps) {
   const { value } = useSelectContext();
   return (
-    <span className={value ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}>
+    <span
+      className={
+        value ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
+      }
+    >
       {value || placeholder || "Select…"}
     </span>
   );
@@ -188,10 +196,4 @@ function SelectItem({ value, children, className = "" }: SelectItemProps) {
   );
 }
 
-export {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-};
+export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };

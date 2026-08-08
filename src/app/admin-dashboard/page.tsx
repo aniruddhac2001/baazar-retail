@@ -17,20 +17,15 @@ type AdminDashboardProps = {
   onLogout: () => void;
 };
 
-const AdminDashboard = dynamic(
-  () => import("./components/AdminDashboard"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="min-h-screen flex items-center justify-center relative">
-        <GradientBackground />
-        <p className="text-sm text-slate-500 relative z-10">
-          Loading dashboard…
-        </p>
-      </div>
-    ),
-  }
-) as ComponentType<AdminDashboardProps>;
+const AdminDashboard = dynamic(() => import("./components/AdminDashboard"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center relative">
+      <GradientBackground />
+      <p className="text-sm text-slate-500 relative z-10">Loading dashboard…</p>
+    </div>
+  ),
+}) as ComponentType<AdminDashboardProps>;
 
 export default function AdminDashboardPage() {
   const [auth, setAuth] = useState<"checking" | "login" | "ok">("checking");
@@ -99,7 +94,9 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div className="text-center">
-                <h1 className="text-lg font-bold text-slate-900">Admin Login</h1>
+                <h1 className="text-lg font-bold text-slate-900">
+                  Admin Login
+                </h1>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Baazar Retail Private Limited
                 </p>

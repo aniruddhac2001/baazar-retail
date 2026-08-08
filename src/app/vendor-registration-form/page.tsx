@@ -11,11 +11,12 @@ import { Step5 } from "./_components/step5";
 import { SuccessModal } from "./_components/success-modal";
 import { DuplicateWarningModal } from "./_components/duplicate-warning-modal";
 import { Navbar } from "@/components/ui/Navbar";
+import { type VendorFormData, defaultVendorFormData } from "./_lib/types";
 import {
-  type VendorFormData,
-  defaultVendorFormData,
-} from "./_lib/types";
-import { submitVendorRegistration, updateVendorVrf, findDuplicateVendor } from "@/lib/supabase/db";
+  submitVendorRegistration,
+  updateVendorVrf,
+  findDuplicateVendor,
+} from "@/lib/supabase/db";
 import { generateVrfNumber } from "./_lib/vrf";
 import type { Vendor } from "@/lib/supabase/types";
 
@@ -75,32 +76,41 @@ const STEP_LABELS = [
 
 function validateStep(
   step: number,
-  data: VendorFormData
+  data: VendorFormData,
 ): Partial<Record<keyof VendorFormData, string>> {
   const errs: Partial<Record<keyof VendorFormData, string>> = {};
 
   if (step === 1) {
     if (!data.entityName.trim()) errs.entityName = "Entity name is required.";
     if (!data.entityType) errs.entityType = "Please select an entity type.";
-    if (!data.registeredAddress.trim()) errs.registeredAddress = "Address is required.";
-    if (!data.registeredDistrict.trim()) errs.registeredDistrict = "District is required.";
-    if (!data.registeredLocation.trim()) errs.registeredLocation = "Location is required.";
-    if (data.registeredPinCode.length !== 6) errs.registeredPinCode = "Enter a valid 6-digit PIN.";
-    if (data.registeredPhone.length !== 10) errs.registeredPhone = "Enter a valid 10-digit phone.";
-    if (!data.registeredEmail.includes("@")) errs.registeredEmail = "Enter a valid email.";
+    if (!data.registeredAddress.trim())
+      errs.registeredAddress = "Address is required.";
+    if (!data.registeredDistrict.trim())
+      errs.registeredDistrict = "District is required.";
+    if (!data.registeredLocation.trim())
+      errs.registeredLocation = "Location is required.";
+    if (data.registeredPinCode.length !== 6)
+      errs.registeredPinCode = "Enter a valid 6-digit PIN.";
+    if (data.registeredPhone.length !== 10)
+      errs.registeredPhone = "Enter a valid 10-digit phone.";
+    if (!data.registeredEmail.includes("@"))
+      errs.registeredEmail = "Enter a valid email.";
   }
 
   if (step === 2 && !data.sameAsRegistered) {
     if (!data.commAddress.trim()) errs.commAddress = "Address is required.";
     if (!data.commDistrict.trim()) errs.commDistrict = "District is required.";
     if (!data.commLocation.trim()) errs.commLocation = "Location is required.";
-    if (data.commPinCode.length !== 6) errs.commPinCode = "Enter a valid 6-digit PIN.";
-    if (data.commPhone.length !== 10) errs.commPhone = "Enter a valid 10-digit phone.";
+    if (data.commPinCode.length !== 6)
+      errs.commPinCode = "Enter a valid 6-digit PIN.";
+    if (data.commPhone.length !== 10)
+      errs.commPhone = "Enter a valid 10-digit phone.";
     if (!data.commEmail.includes("@")) errs.commEmail = "Enter a valid email.";
   }
 
   if (step === 3) {
-    if (data.panNumber.length !== 10) errs.panNumber = "PAN must be 10 characters.";
+    if (data.panNumber.length !== 10)
+      errs.panNumber = "PAN must be 10 characters.";
     if (!data.gstStatus) errs.gstStatus = "Select GST status.";
     if (
       (data.gstStatus === "Registered" || data.gstStatus === "Composition") &&
@@ -112,14 +122,18 @@ function validateStep(
 
   if (step === 4) {
     if (!data.bankName.trim()) errs.bankName = "Bank name is required.";
-    if (!data.bankAccountNumber.trim()) errs.bankAccountNumber = "Account number is required.";
-    if (data.ifscCode.length !== 11) errs.ifscCode = "IFSC must be 11 characters.";
-    if (!data.chequeLabel.trim()) errs.chequeLabel = "Name on account is required.";
+    if (!data.bankAccountNumber.trim())
+      errs.bankAccountNumber = "Account number is required.";
+    if (data.ifscCode.length !== 11)
+      errs.ifscCode = "IFSC must be 11 characters.";
+    if (!data.chequeLabel.trim())
+      errs.chequeLabel = "Name on account is required.";
   }
 
   if (step === 5) {
     if (!data.branchName.trim()) errs.branchName = "Branch name is required.";
-    if (!data.branchAddress.trim()) errs.branchAddress = "Branch address is required.";
+    if (!data.branchAddress.trim())
+      errs.branchAddress = "Branch address is required.";
     if (data.goodsServices.length === 0)
       errs.goodsServices = "Select at least one goods/services category.";
 
@@ -136,7 +150,8 @@ function validateStep(
     if (!data.employeeRefName || !data.employeeRefName.trim())
       errs.employeeRefName = "Baazar Retail Employee Name is required.";
     if (!data.employeeRefContact || data.employeeRefContact.length !== 10)
-      errs.employeeRefContact = "Enter a valid 10-digit employee contact number.";
+      errs.employeeRefContact =
+        "Enter a valid 10-digit employee contact number.";
 
     if (!data.agreeNda) errs.agreeNda = "You must agree to the NDA.";
     if (!data.agreeTerms) errs.agreeTerms = "You must agree to the terms.";
@@ -148,7 +163,9 @@ function validateStep(
 export default function VendorRegistrationPage() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<VendorFormData>(defaultVendorFormData);
-  const [errors, setErrors] = useState<Partial<Record<keyof VendorFormData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof VendorFormData, string>>
+  >({});
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [duplicateVendor, setDuplicateVendor] = useState<Vendor | null>(null);
@@ -175,7 +192,11 @@ export default function VendorRegistrationPage() {
     saveTimer.current = setTimeout(() => {
       const hasContent =
         step > 1 ||
-        !!(data.entityName?.trim() || data.registeredEmail?.trim() || data.panNumber?.trim());
+        !!(
+          data.entityName?.trim() ||
+          data.registeredEmail?.trim() ||
+          data.panNumber?.trim()
+        );
       if (hasContent) {
         saveDraft(step, data);
         setDraftRestored(true);
@@ -241,22 +262,37 @@ export default function VendorRegistrationPage() {
           city: data.registeredLocation || undefined,
           zip: data.registeredPinCode || undefined,
           phone: data.registeredPhone || undefined,
-          registeredPhoneAdditional: data.registeredPhoneAdditional || undefined,
+          registeredPhoneAdditional:
+            data.registeredPhoneAdditional || undefined,
           email: data.registeredEmail,
           // Step 2
           sameAsRegistered: data.sameAsRegistered,
-          commAddress: data.sameAsRegistered ? undefined : data.commAddress || undefined,
-          commDistrict: data.sameAsRegistered ? undefined : data.commDistrict || undefined,
-          commLocation: data.sameAsRegistered ? undefined : data.commLocation || undefined,
-          commPinCode: data.sameAsRegistered ? undefined : data.commPinCode || undefined,
-          commPhone: data.sameAsRegistered ? undefined : data.commPhone || undefined,
-          commEmail: data.sameAsRegistered ? undefined : data.commEmail || undefined,
+          commAddress: data.sameAsRegistered
+            ? undefined
+            : data.commAddress || undefined,
+          commDistrict: data.sameAsRegistered
+            ? undefined
+            : data.commDistrict || undefined,
+          commLocation: data.sameAsRegistered
+            ? undefined
+            : data.commLocation || undefined,
+          commPinCode: data.sameAsRegistered
+            ? undefined
+            : data.commPinCode || undefined,
+          commPhone: data.sameAsRegistered
+            ? undefined
+            : data.commPhone || undefined,
+          commEmail: data.sameAsRegistered
+            ? undefined
+            : data.commEmail || undefined,
           // Step 3
           panNumber: data.panNumber || undefined,
           panFileId: data.panFile?.storageId || undefined,
           hasTan: data.hasTan,
           tanNumber: data.hasTan ? data.tanNumber || undefined : undefined,
-          tanFileId: data.hasTan ? data.tanFile?.storageId || undefined : undefined,
+          tanFileId: data.hasTan
+            ? data.tanFile?.storageId || undefined
+            : undefined,
           gstStatus: data.gstStatus || undefined,
           gstin: data.gstin || undefined,
           gstFileId: data.gstFile?.storageId || undefined,
@@ -270,7 +306,9 @@ export default function VendorRegistrationPage() {
           msmedLineOfBusiness: data.isMsmed
             ? data.msmedLineOfBusiness || undefined
             : undefined,
-          msmedFileId: data.isMsmed ? data.msmedFile?.storageId || undefined : undefined,
+          msmedFileId: data.isMsmed
+            ? data.msmedFile?.storageId || undefined
+            : undefined,
           bankName: data.bankName || undefined,
           accountNumber: data.bankAccountNumber || undefined,
           ifscCode: data.ifscCode || undefined,
@@ -282,7 +320,7 @@ export default function VendorRegistrationPage() {
           goodsServices: data.goodsServices,
           departmentTrading:
             data.goodsServices.includes("Non Trading Goods") ||
-              data.goodsServices.includes("Services")
+            data.goodsServices.includes("Services")
               ? undefined
               : data.departmentTrading || undefined,
           employeeRefName: data.employeeRefName || undefined,
@@ -307,7 +345,10 @@ export default function VendorRegistrationPage() {
         if (err instanceof Error) {
           console.error("Vendor registration error:", err.message, err);
         } else if (err && typeof err === "object") {
-          console.error("Vendor registration error:", JSON.stringify(err, null, 2));
+          console.error(
+            "Vendor registration error:",
+            JSON.stringify(err, null, 2),
+          );
         } else {
           console.error("Vendor registration error:", err);
         }
@@ -352,13 +393,26 @@ export default function VendorRegistrationPage() {
       <main className="min-h-screen relative px-4 pt-24 pb-10">
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="text-center">
-            <h1 className="text-3xl font-semibold text-slate-900">Vendor Registration</h1>
+            <h1 className="text-3xl font-semibold text-slate-900">
+              Vendor Registration
+            </h1>
             <p className="mt-2 text-slate-600">
               Complete all {TOTAL_STEPS} steps to submit your application.
             </p>
             {draftRestored && (
               <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-sm text-slate-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 shrink-0">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-slate-500 shrink-0"
+                >
                   <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
                   <path d="M14 2v4a2 2 0 0 0 2 2h4" />
                   <path d="M10 9H8" />
@@ -394,15 +448,19 @@ export default function VendorRegistrationPage() {
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
                 className="h-full rounded-full transition-all duration-300"
-                style={{ background: "#FF6B00", width: `${(step / TOTAL_STEPS) * 100}%` }}
+                style={{
+                  background: "#FF6B00",
+                  width: `${(step / TOTAL_STEPS) * 100}%`,
+                }}
               />
             </div>
             <div className="mt-3 flex justify-between">
               {STEP_LABELS.map((label, i) => (
                 <span
                   key={label}
-                  className={`hidden text-[10px] font-medium sm:block ${i + 1 <= step ? "text-indigo-600" : "text-slate-400"
-                    }`}
+                  className={`hidden text-[10px] font-medium sm:block ${
+                    i + 1 <= step ? "text-indigo-600" : "text-slate-400"
+                  }`}
                 >
                   {label.split(" ")[0]}
                 </span>
@@ -431,11 +489,21 @@ export default function VendorRegistrationPage() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              {step === 1 && <Step1 data={data} onChange={onChange} errors={errors} />}
-              {step === 2 && <Step2 data={data} onChange={onChange} errors={errors} />}
-              {step === 3 && <Step3 data={data} onChange={onChange} errors={errors} />}
-              {step === 4 && <Step4 data={data} onChange={onChange} errors={errors} />}
-              {step === 5 && <Step5 data={data} onChange={onChange} errors={errors} />}
+              {step === 1 && (
+                <Step1 data={data} onChange={onChange} errors={errors} />
+              )}
+              {step === 2 && (
+                <Step2 data={data} onChange={onChange} errors={errors} />
+              )}
+              {step === 3 && (
+                <Step3 data={data} onChange={onChange} errors={errors} />
+              )}
+              {step === 4 && (
+                <Step4 data={data} onChange={onChange} errors={errors} />
+              )}
+              {step === 5 && (
+                <Step5 data={data} onChange={onChange} errors={errors} />
+              )}
             </motion.div>
 
             {submitError && (
@@ -468,7 +536,11 @@ export default function VendorRegistrationPage() {
           </div>
         </div>
 
-        <SuccessModal open={showSuccess} onClose={handleSuccessClose} vrfNumber={vrfNumber} />
+        <SuccessModal
+          open={showSuccess}
+          onClose={handleSuccessClose}
+          vrfNumber={vrfNumber}
+        />
         <DuplicateWarningModal
           open={showDuplicate}
           onClose={() => setShowDuplicate(false)}

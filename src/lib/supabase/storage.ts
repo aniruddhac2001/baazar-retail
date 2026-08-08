@@ -47,7 +47,7 @@ function fileToDataUrl(file: File): Promise<string> {
 export async function uploadVendorDocument(
   file: File,
   folder: string = "uploads",
-  onProgress?: UploadProgressCallback
+  onProgress?: UploadProgressCallback,
 ): Promise<UploadResult> {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const ext = safeName.includes(".")
@@ -59,7 +59,7 @@ export async function uploadVendorDocument(
 
   // Target bucket names to attempt: primary configured bucket, then fallback "VRF" and "vendor-documents"
   const bucketsToTry = Array.from(
-    new Set([VENDOR_DOCS_BUCKET, "VRF", "vendor-documents"]).values()
+    new Set([VENDOR_DOCS_BUCKET, "VRF", "vendor-documents"]).values(),
   );
 
   for (const bucket of bucketsToTry) {
@@ -125,7 +125,7 @@ export async function uploadVendorDocument(
 function uploadWithProgress(
   signedUrl: string,
   file: File,
-  onProgress?: UploadProgressCallback
+  onProgress?: UploadProgressCallback,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -144,7 +144,9 @@ function uploadWithProgress(
         resolve();
       } else {
         reject(
-          new Error(`Upload failed (${xhr.status}): ${xhr.responseText || xhr.statusText}`)
+          new Error(
+            `Upload failed (${xhr.status}): ${xhr.responseText || xhr.statusText}`,
+          ),
         );
       }
     };
@@ -156,7 +158,12 @@ function uploadWithProgress(
 
 /** Remove a file from the vendor documents bucket by path/storageId. */
 export async function removeVendorDocument(storageId: string): Promise<void> {
-  if (!storageId || storageId.startsWith("local-") || storageId.startsWith("data:")) return;
+  if (
+    !storageId ||
+    storageId.startsWith("local-") ||
+    storageId.startsWith("data:")
+  )
+    return;
   const { error } = await supabase.storage
     .from(VENDOR_DOCS_BUCKET)
     .remove([storageId]);
@@ -166,11 +173,12 @@ export async function removeVendorDocument(storageId: string): Promise<void> {
 /** Get a time-limited signed download URL for a private object. */
 export async function getVendorDocumentUrl(
   storageId: string,
-  expiresInSeconds = 3600
+  expiresInSeconds = 3600,
 ): Promise<string | null> {
   if (!storageId || !storageId.trim()) return null;
   if (storageId.startsWith("data:")) return storageId;
-  if (storageId.startsWith("http://") || storageId.startsWith("https://")) return storageId;
+  if (storageId.startsWith("http://") || storageId.startsWith("https://"))
+    return storageId;
 
   try {
     const { data: publicData } = supabase.storage

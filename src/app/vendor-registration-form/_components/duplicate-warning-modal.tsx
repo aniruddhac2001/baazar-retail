@@ -14,7 +14,11 @@ type Props = {
   existingVendor: Vendor | null;
 };
 
-export function DuplicateWarningModal({ open, onClose, existingVendor }: Props) {
+export function DuplicateWarningModal({
+  open,
+  onClose,
+  existingVendor,
+}: Props) {
   const [copied, setCopied] = useState(false);
 
   if (!existingVendor) return null;
@@ -74,7 +78,15 @@ export function DuplicateWarningModal({ open, onClose, existingVendor }: Props) 
             </h2>
 
             <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">
-              A vendor registration with this <span className="font-semibold">Email</span>, <span className="font-semibold">PAN</span>, or <span className="font-semibold">GSTIN</span> has already been submitted to <span className="font-semibold">Baazar Retail Private Limited</span>.
+              A vendor registration with this{" "}
+              <span className="font-semibold">Email</span>,{" "}
+              <span className="font-semibold">PAN</span>, or{" "}
+              <span className="font-semibold">GSTIN</span> has already been
+              submitted to{" "}
+              <span className="font-semibold">
+                Baazar Retail Private Limited
+              </span>
+              .
             </p>
 
             {/* Original VRF Details Card */}
@@ -82,9 +94,11 @@ export function DuplicateWarningModal({ open, onClose, existingVendor }: Props) 
               <p className="text-[11px] font-bold uppercase tracking-wider text-amber-900">
                 Original Application Details
               </p>
-              
+
               <div className="flex items-center justify-between gap-2 border-b border-amber-200/80 pb-2">
-                <span className="text-xs text-slate-600 font-medium">Vendor Unique ID:</span>
+                <span className="text-xs text-slate-600 font-medium">
+                  Vendor Unique ID:
+                </span>
                 <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-amber-300">
                   <span className="font-mono text-xs font-bold text-slate-900">
                     {vrfNumber}
@@ -106,7 +120,9 @@ export function DuplicateWarningModal({ open, onClose, existingVendor }: Props) 
 
               {existingVendor.name && (
                 <div className="flex items-center justify-between text-xs py-0.5">
-                  <span className="text-slate-600 font-medium">Entity Name:</span>
+                  <span className="text-slate-600 font-medium">
+                    Entity Name:
+                  </span>
                   <span className="font-semibold text-slate-900 truncate max-w-[180px]">
                     {existingVendor.name}
                   </span>
@@ -115,19 +131,26 @@ export function DuplicateWarningModal({ open, onClose, existingVendor }: Props) 
 
               {existingVendor.created_at && (
                 <div className="flex items-center justify-between text-xs py-0.5">
-                  <span className="text-slate-600 font-medium">Submitted On:</span>
+                  <span className="text-slate-600 font-medium">
+                    Submitted On:
+                  </span>
                   <span className="text-slate-800">
-                    {new Date(existingVendor.created_at).toLocaleDateString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {new Date(existingVendor.created_at).toLocaleDateString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    )}
                   </span>
                 </div>
               )}
 
               <div className="flex items-center justify-between text-xs pt-1">
-                <span className="text-slate-600 font-medium">Current Status:</span>
+                <span className="text-slate-600 font-medium">
+                  Current Status:
+                </span>
                 <span className="font-semibold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded-full text-[11px]">
                   {statusLabel(existingVendor.status || undefined)}
                 </span>

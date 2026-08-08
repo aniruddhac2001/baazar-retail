@@ -37,7 +37,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { exportVendorsToExcel, getVendorFilename, downloadVendorDocumentsZip } from "@/lib/excel-export";
+import {
+  exportVendorsToExcel,
+  getVendorFilename,
+  downloadVendorDocumentsZip,
+} from "@/lib/excel-export";
 import { getVendorDocumentUrl } from "@/lib/supabase/storage";
 import {
   ShieldAlertIcon,
@@ -49,9 +53,13 @@ import {
   FileTextIcon,
   SearchIcon,
   Trash2Icon,
+  XCircleIcon,
+  RefreshCwIcon,
+  AlertTriangleIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { fetchAdminActivityAsync } from "../_lib/admins";
 
 type VendorStatus =
   | "pending"
@@ -133,9 +141,9 @@ function VendorProfileModal({
   if (!vendor) return null;
 
   const current = vendor.status ?? "pending";
-  const canActOnThis =
-    admin.canCrud || admin.queue.includes(current);
-  const canApprove = canActOnThis && current !== "approved" && current !== "rejected";
+  const canActOnThis = admin.canCrud || admin.queue.includes(current);
+  const canApprove =
+    canActOnThis && current !== "approved" && current !== "rejected";
   const canReject = canActOnThis && current !== "rejected";
 
   const handleStatus = async (status: VendorStatus) => {
@@ -145,8 +153,8 @@ function VendorProfileModal({
         status === "rejected"
           ? "rejected"
           : status === "approved" ||
-            status === "accounts_approved" ||
-            status === "gst_approved"
+              status === "accounts_approved" ||
+              status === "gst_approved"
             ? "approved"
             : status;
       logAdminActivity({
@@ -171,7 +179,7 @@ function VendorProfileModal({
     const next = admin.canCrud
       ? admin.role === "super"
         ? // super: advance one stage or fully approve if at end
-        current === "pending"
+          current === "pending"
           ? "accounts_approved"
           : current === "accounts_approved"
             ? "gst_approved"
@@ -184,7 +192,7 @@ function VendorProfileModal({
   const handleDelete = async () => {
     if (
       !confirm(
-        `Are you sure you want to permanently delete vendor ${vendor.vrfNumber || vendor.name}? This will remove the record completely from Supabase database.`
+        `Are you sure you want to permanently delete vendor ${vendor.vrfNumber || vendor.name}? This will remove the record completely from Supabase database.`,
       )
     )
       return;
@@ -225,7 +233,10 @@ function VendorProfileModal({
     { label: "Account Number", value: vendor.accountNumber || undefined },
     { label: "IFSC Code", value: vendor.ifscCode || undefined },
     { label: "Branch Name", value: vendor.branchName || undefined },
-    { label: "Department Trading", value: vendor.departmentTrading || undefined },
+    {
+      label: "Department Trading",
+      value: vendor.departmentTrading || undefined,
+    },
     {
       label: "Goods/Services",
       value: vendor.goodsServices?.join(", "),
@@ -237,7 +248,12 @@ function VendorProfileModal({
         ? `+91 ${vendor.employeeRefContact}`
         : undefined,
     },
-    { label: "Vendor Contact Person", value: vendor.vendorContactPerson ? `+91 ${vendor.vendorContactPerson}` : undefined },
+    {
+      label: "Vendor Contact Person",
+      value: vendor.vendorContactPerson
+        ? `+91 ${vendor.vendorContactPerson}`
+        : undefined,
+    },
     {
       label: "Submitted At",
       value: vendor.created_at
@@ -312,9 +328,12 @@ function VendorProfileModal({
           <div className="rounded-lg border p-4 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
-                <p className="text-sm font-semibold text-foreground">Documents</p>
+                <p className="text-sm font-semibold text-foreground">
+                  Documents
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  Only files actually uploaded by the vendor are listed as available.
+                  Only files actually uploaded by the vendor are listed as
+                  available.
                 </p>
               </div>
               {!admin.canCrud && countVendorDocuments(vendor) > 0 && (
@@ -433,7 +452,7 @@ function VendorProfileModal({
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p className="text-sm font-medium break-words">{value}</p>
                 </div>
-              ) : null
+              ) : null,
             )}
           </div>
           {vendor.remarks && (
@@ -477,13 +496,17 @@ function ManageUsersPanel() {
 
   const saveEdit = () => {
     if (!editingId) return;
-    if (!form.username.trim() || !form.password.trim() || !form.displayName.trim()) {
+    if (
+      !form.username.trim() ||
+      !form.password.trim() ||
+      !form.displayName.trim()
+    ) {
       toast.error("All fields are required.");
       return;
     }
     // Prevent duplicate usernames
     const clash = users.find(
-      (u) => u.id !== editingId && u.username === form.username.trim()
+      (u) => u.id !== editingId && u.username === form.username.trim(),
     );
     if (clash) {
       toast.error("Username already in use by another admin.");
@@ -506,7 +529,8 @@ function ManageUsersPanel() {
   };
 
   const handleReset = () => {
-    if (!confirm("Reset all admin usernames/passwords to factory defaults?")) return;
+    if (!confirm("Reset all admin usernames/passwords to factory defaults?"))
+      return;
     const next = resetAdminUsersToDefault();
     setUsers(next);
     setEditingId(null);
@@ -523,7 +547,8 @@ function ManageUsersPanel() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Super Admin can update username, password and display name for all users.
+          Super Admin can update username, password and display name for all
+          users.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -545,7 +570,11 @@ function ManageUsersPanel() {
                 </p>
               </div>
               {editingId !== u.id ? (
-                <Button size="sm" variant="secondary" onClick={() => startEdit(u)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => startEdit(u)}
+                >
                   Edit
                 </Button>
               ) : (
@@ -603,7 +632,9 @@ function ManageUsersPanel() {
                 </p>
                 <p>
                   <span className="text-muted-foreground">Password: </span>
-                  <span className="font-mono">{"•".repeat(Math.min(u.password.length, 8))}</span>
+                  <span className="font-mono">
+                    {"•".repeat(Math.min(u.password.length, 8))}
+                  </span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">Name: </span>
@@ -618,19 +649,189 @@ function ManageUsersPanel() {
   );
 }
 
-function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
-  const [items, setItems] = useState<AdminActivity[]>([]);
+function RejectionBreakdownPanel({
+  vendors,
+  activities,
+  onSelectVendor,
+}: {
+  vendors: Vendor[];
+  activities: AdminActivity[];
+  onSelectVendor: (vendor: Vendor) => void;
+}) {
+  const rejectedVendors = useMemo(() => {
+    return vendors.filter((v) => v.status === "rejected");
+  }, [vendors]);
 
-  const refresh = () => setItems(getAdminActivity());
+  const counts = useMemo(() => {
+    let accounts = 0;
+    let gst = 0;
+    let it = 0;
+
+    rejectedVendors.forEach((v) => {
+      const rejAct = activities.find(
+        (a) =>
+          a.action === "rejected" &&
+          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
+      );
+      const role = rejAct?.adminRole;
+      if (role === "accounts") accounts++;
+      else if (role === "gst") gst++;
+      else if (role === "it") it++;
+      else accounts++; // default to accounts if rejected at stage 1
+    });
+
+    return { total: rejectedVendors.length, accounts, gst, it };
+  }, [rejectedVendors, activities]);
+
+  return (
+    <Card className="shadow-sm border-red-100 bg-red-50/20">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2 text-red-900">
+              <XCircleIcon className="w-5 h-5 text-red-600" />
+              Rejected Applications Breakdown ({counts.total})
+            </CardTitle>
+            <p className="text-xs text-red-700/80 mt-1">
+              Synchronized breakdown of rejected vendor applications across
+              Accounts, GST, and IT desks.
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className="bg-red-100 border-red-300 text-red-800 font-semibold px-3 py-1"
+          >
+            {counts.total} Rejections Total
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Desk Breakdown Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              Accounts Desk
+            </p>
+            <p className="text-2xl font-bold text-red-600 mt-1">
+              {counts.accounts}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Rejected at Accounts Stage
+            </p>
+          </div>
+          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              GST Desk
+            </p>
+            <p className="text-2xl font-bold text-red-600 mt-1">{counts.gst}</p>
+            <p className="text-[11px] text-muted-foreground">
+              Rejected at GST Stage
+            </p>
+          </div>
+          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+              IT Desk
+            </p>
+            <p className="text-2xl font-bold text-red-600 mt-1">{counts.it}</p>
+            <p className="text-[11px] text-muted-foreground">
+              Rejected at IT Stage
+            </p>
+          </div>
+        </div>
+
+        {/* Rejected Vendors List */}
+        {rejectedVendors.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            No rejected applications found in database.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            {rejectedVendors.map((v) => {
+              const rejAct = activities.find(
+                (a) =>
+                  a.action === "rejected" &&
+                  (a.vendorId === v.id ||
+                    (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
+              );
+              const rejBy = rejAct
+                ? `${rejAct.adminName} (${roleLabel(rejAct.adminRole)})`
+                : "Accounts Desk";
+              return (
+                <div
+                  key={v.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white border border-slate-200 hover:border-red-300 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                        {v.vrfNumber || "—"}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900 truncate">
+                        {v.name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Rejected by:{" "}
+                      <span className="font-medium text-slate-700">
+                        {rejBy}
+                      </span>
+                      {v.created_at && (
+                        <span className="ml-2">
+                          · Submitted{" "}
+                          {new Date(v.created_at).toLocaleDateString("en-IN")}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs shrink-0 border-slate-200 hover:bg-slate-50"
+                    onClick={() => onSelectVendor(v)}
+                  >
+                    View Details
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActivityPanel({
+  vendors,
+  onRefreshRequested,
+}: {
+  vendors: Vendor[];
+  onRefreshRequested?: () => void;
+}) {
+  const [items, setItems] = useState<AdminActivity[]>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const list = await fetchAdminActivityAsync(vendors);
+      setItems(list);
+    } catch {
+      setItems(getAdminActivity());
+    } finally {
+      setSyncing(false);
+      if (onRefreshRequested) onRefreshRequested();
+    }
+  }, [vendors, onRefreshRequested]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!confirm("Clear all activity logs?")) return;
-    clearAdminActivity();
-    refresh();
+    await clearAdminActivity();
+    await refresh();
     toast.success("Activity log cleared.");
   };
 
@@ -638,8 +839,33 @@ function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-base">Other Admins&apos; Activity</CardTitle>
+          <div>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">
+                Other Admins&apos; Activity Log
+              </CardTitle>
+              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 text-[11px] px-2 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Synced with DB
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Approvals and rejections by Accounts, GST and IT desks.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={refresh}
+              disabled={syncing}
+            >
+              <RefreshCwIcon
+                className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
+              />
+              Sync DB
+            </Button>
             <Button
               size="sm"
               className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
@@ -649,7 +875,9 @@ function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
                   return;
                 }
                 exportVendorsToExcel(vendors, { isSuperAdminReport: true });
-                toast.success("Exported Super Admin report with desk statuses.");
+                toast.success(
+                  "Exported Super Admin report with desk statuses.",
+                );
               }}
             >
               <DownloadIcon className="w-3.5 h-3.5" />
@@ -660,14 +888,12 @@ function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
             </Button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Approvals and rejections by Accounts, GST and IT desks.
-        </p>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-8 text-center">
-            No activity yet. Actions by other admins will appear here.
+            No activity yet. Actions by other admins will appear here
+            automatically.
           </p>
         ) : (
           <div className="space-y-2 max-h-[420px] overflow-y-auto">
@@ -683,9 +909,9 @@ function ActivityPanel({ vendors }: { vendors: Vendor[] }) {
                     <span
                       className={
                         a.action === "rejected"
-                          ? "text-red-600"
+                          ? "text-red-600 font-semibold"
                           : a.action === "approved"
-                            ? "text-green-700"
+                            ? "text-green-700 font-semibold"
                             : "text-slate-700"
                       }
                     >
@@ -732,12 +958,12 @@ function AdminDashboardInner({
   onLogout: () => void;
   admin: SafeAdmin;
 }) {
-
   const [search, setSearch] = useState("");
   const [gstFilter, setGstFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [vendors, setVendors] = useState<Vendor[] | null>(null);
+  const [activities, setActivities] = useState<AdminActivity[]>([]);
   const [stats, setStats] = useState<{
     total: number;
     pending: number;
@@ -750,8 +976,11 @@ function AdminDashboardInner({
     setLoading(true);
     try {
       const [v, s] = await Promise.all([getVendors(), getVendorStats()]);
-      setVendors(v ?? []);
+      const fetchedVendors = v ?? [];
+      setVendors(fetchedVendors);
       setStats(s);
+      const acts = await fetchAdminActivityAsync(fetchedVendors);
+      setActivities(acts);
     } catch {
       toast.error("Failed to load vendors from Supabase.");
       setVendors([]);
@@ -765,13 +994,12 @@ function AdminDashboardInner({
   }, [load]);
 
   const filteredVendors = useMemo(() => {
-    const activities = getAdminActivity();
     const getRejectionRole = (v: Vendor): string => {
       if (v.status !== "rejected") return "";
       const rej = activities.find(
         (a) =>
           a.action === "rejected" &&
-          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber))
+          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
       );
       return rej?.adminRole ?? "accounts";
     };
@@ -790,7 +1018,8 @@ function AdminDashboardInner({
           }
         } else if (admin.role === "it") {
           // IT desk only sees applications that reached IT desk
-          if (status === "pending" || status === "accounts_approved") return false;
+          if (status === "pending" || status === "accounts_approved")
+            return false;
           if (status === "rejected") {
             const rejRole = getRejectionRole(v);
             if (rejRole !== "it") return false; // Rejected before reaching IT
@@ -813,7 +1042,8 @@ function AdminDashboardInner({
         const vrfB = b.vrfNumber || "";
         return vrfA.localeCompare(vrfB, undefined, { numeric: true });
       });
-  }, [vendors, search, gstFilter, statusFilter, admin]);
+  }, [vendors, activities, search, gstFilter, statusFilter, admin]);
+
   const GST_OPTIONS = [
     "Regular",
     "Composite",
@@ -833,7 +1063,7 @@ function AdminDashboardInner({
             <ShieldAlertIcon className="w-5 h-5 text-white shrink-0" />
             <p className="text-white text-sm font-medium">
               {admin.canCrud
-                ? "Super Admin — Full access (CRUD)"
+                ? "Super Admin — Full access & Database Sync"
                 : admin.role === "accounts"
                   ? "Accounts desk — review new submissions"
                   : admin.role === "gst"
@@ -856,177 +1086,245 @@ function AdminDashboardInner({
           </div>
         </div>
 
-        {admin.canCrud ? (
+        {/* Global Stat Cards for all admins */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Total Submissions",
+              value: (vendors ?? []).length,
+              icon: (
+                <UsersIcon className="w-5 h-5" style={{ color: "#FF6B00" }} />
+              ),
+            },
+            {
+              label: "Rejected Applications",
+              value: (vendors ?? []).filter((v) => v.status === "rejected")
+                .length,
+              icon: <XCircleIcon className="w-5 h-5 text-red-500" />,
+            },
+            {
+              label: "Verified Vendors",
+              value: (vendors ?? []).filter((v) => v.status === "approved")
+                .length,
+              icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
+            },
+            {
+              label: "Documents Uploaded",
+              value: countAllDocuments(vendors ?? []),
+              icon: <FileTextIcon className="w-5 h-5 text-blue-500" />,
+            },
+          ].map((card) => (
+            <Card key={card.label} className="shadow-sm">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-medium text-muted-foreground">
+                    {card.label}
+                  </CardTitle>
+                  {card.icon}
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <p className="text-3xl font-bold text-foreground">
+                  {card.value}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {admin.canCrud && (
           <>
             <ManageUsersPanel />
-            <ActivityPanel vendors={vendors ?? []} />
-          </>
-        ) : (
-          <>
-            {/* Stat Cards (Desk Admins only) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  label: "Total Submissions",
-                  value: filteredVendors.length,
-                  icon: (
-                    <UsersIcon className="w-5 h-5" style={{ color: "#FF6B00" }} />
-                  ),
-                },
-                {
-                  label: "Pending Approvals",
-                  value: filteredVendors.filter(
-                    (v) => (v.status ?? "pending") !== "approved" && v.status !== "rejected"
-                  ).length,
-                  icon: <ClockIcon className="w-5 h-5 text-yellow-500" />,
-                },
-                {
-                  label: "Verified Vendors",
-                  value: filteredVendors.filter((v) => v.status === "approved").length,
-                  icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
-                },
-                {
-                  label: "Documents Uploaded",
-                  value: countAllDocuments(filteredVendors),
-                  icon: <FileTextIcon className="w-5 h-5 text-blue-500" />,
-                },
-              ].map((card) => (
-                <Card key={card.label} className="shadow-sm">
-                  <CardHeader className="pb-2 pt-4 px-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xs font-medium text-muted-foreground">
-                        {card.label}
-                      </CardTitle>
-                      {card.icon}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4">
-                    <p className="text-3xl font-bold text-foreground">
-                      {card.value}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <Card className="shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b" style={{ background: "#0A2540" }}>
-                      {[
-                        "Vendor ID",
-                        "Vendor Name",
-                        "Entity Type",
-                        "GST Status",
-                        "Contact Email",
-                        "Submission Date",
-                        "Status",
-                        "Actions",
-                      ].map((h) => (
-                        <th
-                          key={h}
-                          className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap"
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <tr key={i} className="border-b">
-                          {Array.from({ length: 8 }).map((_, j) => (
-                            <td key={j} className="px-4 py-3">
-                              <Skeleton className="h-4 w-24" />
-                            </td>
-                          ))}
-                        </tr>
-                      ))
-                    ) : filteredVendors.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          className="px-4 py-12 text-center text-muted-foreground text-sm"
-                        >
-                          No vendor submissions found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredVendors.map((v) => (
-                        <tr
-                          key={v.id}
-                          className="border-b hover:bg-muted/30 transition-colors"
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
-                              {v.vrfNumber || "—"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 font-medium max-w-[180px] truncate">
-                            {v.name}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {v.entityType}
-                          </td>
-                          <td className="px-4 py-3">{v.gstStatus}</td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">
-                            {v.email}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                            {v.created_at
-                              ? new Date(v.created_at).toLocaleDateString("en-IN")
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusBadge status={v.status || undefined} />
-                          </td>
-                          <td className="px-4 py-3 flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="gap-1 text-xs"
-                              onClick={() => setSelectedVendor(v)}
-                            >
-                              <EyeIcon className="w-3.5 h-3.5" />
-                              View
-                            </Button>
-                            {admin.canCrud && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={async () => {
-                                  if (
-                                    !confirm(
-                                      `Are you sure you want to permanently delete vendor ${v.vrfNumber || v.name} from Supabase database?`
-                                    )
-                                  )
-                                    return;
-                                  try {
-                                    await deleteVendor(v.id);
-                                    toast.success("Vendor record permanently deleted.");
-                                    load();
-                                  } catch {
-                                    toast.error("Failed to delete vendor.");
-                                  }
-                                }}
-                              >
-                                <Trash2Icon className="w-3.5 h-3.5" />
-                                Delete
-                              </Button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            <RejectionBreakdownPanel
+              vendors={vendors ?? []}
+              activities={activities}
+              onSelectVendor={(v) => setSelectedVendor(v)}
+            />
+            <ActivityPanel vendors={vendors ?? []} onRefreshRequested={load} />
           </>
         )}
+
+        {/* Controls and Vendor Table */}
+        <Card className="shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b bg-slate-50/50">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <CardTitle className="text-base font-semibold">
+                Vendor Applications ({filteredVendors.length})
+              </CardTitle>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Search */}
+                <div className="relative w-full sm:w-64">
+                  <SearchIcon className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search VRF / Name / PAN..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 h-9 text-xs"
+                  />
+                </div>
+                {/* GST Filter */}
+                <Select value={gstFilter} onValueChange={setGstFilter}>
+                  <SelectTrigger className="h-9 w-[130px] text-xs">
+                    <SelectValue placeholder="GST Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All GST</SelectItem>
+                    {GST_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Status Filter */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 w-[140px] text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending (Accounts)</SelectItem>
+                    <SelectItem value="accounts_approved">
+                      Pending (GST)
+                    </SelectItem>
+                    <SelectItem value="gst_approved">Pending (IT)</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 gap-1.5 text-xs shrink-0"
+                  onClick={() =>
+                    exportVendorsToExcel(filteredVendors, {
+                      isSuperAdminReport: admin.canCrud,
+                    })
+                  }
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  Export
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b" style={{ background: "#0A2540" }}>
+                  {[
+                    "Vendor ID",
+                    "Vendor Name",
+                    "Entity Type",
+                    "GST Status",
+                    "Contact Email",
+                    "Submission Date",
+                    "Status",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b">
+                      {Array.from({ length: 8 }).map((_, j) => (
+                        <td key={j} className="px-4 py-3">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : filteredVendors.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-12 text-center text-muted-foreground text-sm"
+                    >
+                      No vendor submissions found matching current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredVendors.map((v) => (
+                    <tr
+                      key={v.id}
+                      className="border-b hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
+                          {v.vrfNumber || "—"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium max-w-[180px] truncate">
+                        {v.name}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {v.entityType}
+                      </td>
+                      <td className="px-4 py-3">{v.gstStatus}</td>
+                      <td className="px-4 py-3 text-muted-foreground max-w-[200px] truncate">
+                        {v.email}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                        {v.created_at
+                          ? new Date(v.created_at).toLocaleDateString("en-IN")
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={v.status || undefined} />
+                      </td>
+                      <td className="px-4 py-3 flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1 text-xs"
+                          onClick={() => setSelectedVendor(v)}
+                        >
+                          <EyeIcon className="w-3.5 h-3.5" />
+                          View
+                        </Button>
+                        {admin.canCrud && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={async () => {
+                              if (
+                                !confirm(
+                                  `Are you sure you want to permanently delete vendor ${v.vrfNumber || v.name} from Supabase database?`,
+                                )
+                              )
+                                return;
+                              try {
+                                await deleteVendor(v.id);
+                                toast.success(
+                                  "Vendor record permanently deleted.",
+                                );
+                                load();
+                              } catch {
+                                toast.error("Failed to delete vendor.");
+                              }
+                            }}
+                          >
+                            <Trash2Icon className="w-3.5 h-3.5" />
+                            Delete
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
 
       <VendorProfileModal

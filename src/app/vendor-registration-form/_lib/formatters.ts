@@ -14,20 +14,32 @@ export function formatPin(value: string): string {
 
 /** PAN uppercase alphanumeric, max 10 */
 export function formatPan(value: string): string {
-  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 10);
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 10);
 }
 
 /** TAN uppercase alphanumeric, max 10 */
 export function formatTan(value: string): string {
-  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 10);
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 10);
 }
 
 /** GSTIN uppercase alphanumeric, max 15 */
 export function formatGstin(value: string): string {
-  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 15);
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 15);
 }
 
 /** IFSC uppercase alphanumeric, max 11 */
 export function formatIfsc(value: string): string {
-  return value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 11);
+  return value
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, 11);
 }

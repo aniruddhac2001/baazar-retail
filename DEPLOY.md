@@ -11,11 +11,11 @@
 In **Vercel → Project → Settings → Environment Variables**, add for
 **Production**, **Preview**, and **Development**:
 
-| Name | Value |
-|------|--------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://vwgylcpejojurdpukidx.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | your anon key from Supabase → Settings → API |
-| `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` | `VRF` |
+| Name                                  | Value                                        |
+| ------------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`            | `https://vwgylcpejojurdpukidx.supabase.co`   |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`       | your anon key from Supabase → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` | `VRF`                                        |
 
 Do **not** commit `.env.local`.
 
@@ -43,8 +43,8 @@ vercel --prod
 
 ## 4. After deploy
 
-1. Supabase → Authentication → URL Configuration  
-   - Site URL: `https://your-app.vercel.app`  
+1. Supabase → Authentication → URL Configuration
+   - Site URL: `https://your-app.vercel.app`
    - Redirect URLs: `https://your-app.vercel.app/**`
 2. Confirm `vendors` table exists (run `supabase/schema.sql` if not)
 3. Confirm Storage bucket `VRF` + policies allow uploads

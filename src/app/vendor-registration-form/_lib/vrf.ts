@@ -70,7 +70,8 @@ export async function generateVrfNumber(): Promise<string> {
   const seq = await getGlobalSequence();
 
   if (typeof window !== "undefined") {
-    const stored = parseInt(localStorage.getItem(LOCAL_SEQ_KEY) || "0", 10) || 0;
+    const stored =
+      parseInt(localStorage.getItem(LOCAL_SEQ_KEY) || "0", 10) || 0;
     if (seq > stored) localStorage.setItem(LOCAL_SEQ_KEY, String(seq));
   }
 

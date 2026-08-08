@@ -6,13 +6,15 @@
 
 @theme inline {
   --font-sans:
-    var(--font-inter), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    var(--font-inter), var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   --font-mono:
-    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
   --font-serif:
-    var(--font-noto-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    var(--font-noto-serif), ui-serif, Georgia, Cambria, "Times New Roman",
+    Times, serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -80,9 +82,9 @@
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.72 0.19 45);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.30 0.07 240);
+  --sidebar-accent: oklch(0.3 0.07 240);
   --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(0.30 0.07 240);
+  --sidebar-border: oklch(0.3 0.07 240);
   --sidebar-ring: oklch(0.72 0.19 45);
 }
 
@@ -109,7 +111,7 @@
   --chart-2: oklch(0.55 0.12 240);
   --chart-3: oklch(0.65 0.15 45);
   --chart-4: oklch(0.45 0.1 240);
-  --chart-5: oklch(0.80 0.12 45);
+  --chart-5: oklch(0.8 0.12 45);
   --sidebar: oklch(0.18 0.05 240);
   --sidebar-foreground: oklch(0.95 0.01 240);
   --sidebar-primary: oklch(0.72 0.19 45);
@@ -142,8 +144,17 @@
     cursor: pointer;
   }
 
-  button, a, input, select, textarea {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.15s ease;
   }
 
   button:active:not(:disabled) {
@@ -153,7 +164,9 @@
   /* Smooth focus rings */
   :focus-visible {
     outline-offset: 2px;
-    transition: outline-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      outline-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   /* Smooth scrollbar */
@@ -165,7 +178,7 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.80 0.01 240);
+    background: oklch(0.8 0.01 240);
     border-radius: 99px;
     transition: background-color 0.2s ease;
   }

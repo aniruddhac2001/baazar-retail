@@ -108,7 +108,8 @@ export function Step5({ data, onChange, errors }: Props) {
         {showDepartmentTrading && (
           <div className="space-y-1.5 flex flex-col justify-end">
             <Label className="flex items-end min-h-[2.5rem] leading-tight pb-0.5">
-              Department Trading <span className="text-destructive ml-1">*</span>
+              Department Trading{" "}
+              <span className="text-destructive ml-1">*</span>
             </Label>
             <Select
               value={data.departmentTrading}
@@ -165,10 +166,17 @@ export function Step5({ data, onChange, errors }: Props) {
             <Input
               placeholder="Employee name"
               value={data.employeeRefName}
-              onChange={(e) => onChange({ employeeRefName: e.target.value, hasBaazarReference: true })}
+              onChange={(e) =>
+                onChange({
+                  employeeRefName: e.target.value,
+                  hasBaazarReference: true,
+                })
+              }
             />
             {errors.employeeRefName && (
-              <p className="text-xs text-destructive">{errors.employeeRefName}</p>
+              <p className="text-xs text-destructive">
+                {errors.employeeRefName}
+              </p>
             )}
           </div>
 
@@ -278,7 +286,9 @@ export function Step5({ data, onChange, errors }: Props) {
                 className="text-sm cursor-pointer leading-relaxed"
               >
                 I agree to the{" "}
-                <span className="font-semibold">Standard Terms of Business</span>{" "}
+                <span className="font-semibold">
+                  Standard Terms of Business
+                </span>{" "}
                 as specified by Baazar Retail Private Limited.
               </label>
             </div>

@@ -84,7 +84,8 @@ function mergeWithDefaults(stored: AdminUser[]): AdminUser[] {
 }
 
 export function getAdminUsers(): AdminUser[] {
-  if (typeof window === "undefined") return DEFAULT_ADMIN_USERS.map((u) => ({ ...u }));
+  if (typeof window === "undefined")
+    return DEFAULT_ADMIN_USERS.map((u) => ({ ...u }));
   try {
     const raw = localStorage.getItem(USERS_KEY);
     if (!raw) return DEFAULT_ADMIN_USERS.map((u) => ({ ...u }));
@@ -113,7 +114,7 @@ export function saveAdminUsers(users: AdminUser[]) {
  */
 export function updateAdminUserDetails(
   id: string,
-  updates: { username?: string; password?: string; displayName?: string }
+  updates: { username?: string; password?: string; displayName?: string },
 ): AdminUser[] {
   const users = getAdminUsers();
   const next = users.map((u) => {
@@ -137,11 +138,11 @@ export function resetAdminUsersToDefault(): AdminUser[] {
 
 export function authenticateAdmin(
   username: string,
-  password: string
+  password: string,
 ): SafeAdmin | null {
   const u = username.trim();
   const found = getAdminUsers().find(
-    (a) => a.username === u && a.password === password
+    (a) => a.username === u && a.password === password,
   );
   if (!found) return null;
   const { password: _pw, ...safe } = found;
@@ -201,8 +202,15 @@ export function roleLabel(role: AdminRole): string {
   }
 }
 
+import {
+  getAdminActivitiesFromDb,
+  logAdminActivityToDb,
+  clearAdminActivitiesFromDb,
+  type DbAdminActivity,
+} from "@/lib/supabase/db";
+import type { Vendor } from "@/lib/supabase/types";
 
-/** ---- Admin activity log (local) ---- */
+/** ---- Admin activity log (Database & Local Synced) ---- */
 
 export type AdminActivity = {
   id: string;
@@ -231,8 +239,94 @@ export function getAdminActivity(): AdminActivity[] {
   }
 }
 
+export function saveAdminActivityLocal(items: AdminActivity[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(items.slice(0, 300)));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+  Fetch activity logs from Supabase DB, merge with local cache,
+  and auto-synthesize entries for rejected vendors if missing.
+*/
+export async function fetchAdminActivityAsync(
+  vendors?: Vendor[],
+): Promise<AdminActivity[]> {
+  const localList = getAdminActivity();
+  const dbList = await getAdminActivitiesFromDb();
+
+  const formattedDbList: AdminActivity[] = dbList.map((item, idx) => ({
+    id: item.id || `db-${idx}-${item.at || Date.now()}`,
+    at: item.at || new Date().toISOString(),
+    adminId: item.adminId || "1",
+    adminName: item.adminName || "Admin",
+    adminRole: (item.adminRole as AdminRole) || "accounts",
+    action: item.action || "action",
+    vendorId: item.vendorId,
+    vendorName: item.vendorName,
+    vrfNumber: item.vrfNumber,
+    detail: item.detail,
+  }));
+
+  // Combine DB & Local list by deduplicating
+  const map = new Map<string, AdminActivity>();
+
+  // Helper key for deduping
+  const getKey = (a: AdminActivity) =>
+    a.id.startsWith("synth-")
+      ? `${a.vendorId || a.vrfNumber}-synth`
+      : a.id || `${a.vendorId}-${a.action}-${a.at}`;
+
+  for (const item of [...formattedDbList, ...localList]) {
+    const k = getKey(item);
+    if (!map.has(k)) {
+      map.set(k, item);
+    }
+  }
+
+  const combined = Array.from(map.values());
+
+  // Auto-synthesize rejection entries for any DB vendor with status === 'rejected'
+  if (vendors && Array.isArray(vendors)) {
+    vendors.forEach((v) => {
+      if (v.status === "rejected") {
+        const hasRej = combined.some(
+          (a) =>
+            a.action === "rejected" &&
+            (a.vendorId === v.id ||
+              (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
+        );
+        if (!hasRej) {
+          const synthItem: AdminActivity = {
+            id: `synth-rej-${v.id}`,
+            at: v.created_at || new Date().toISOString(),
+            adminId: "2",
+            adminName: "Accounts",
+            adminRole: "accounts",
+            action: "rejected",
+            vendorId: v.id,
+            vendorName: v.name,
+            vrfNumber: v.vrfNumber || undefined,
+            detail: "Rejected (Synced from Database)",
+          };
+          combined.unshift(synthItem);
+        }
+      }
+    });
+  }
+
+  // Sort descending by timestamp
+  combined.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  saveAdminActivityLocal(combined);
+  return combined;
+}
+
 export function logAdminActivity(
-  entry: Omit<AdminActivity, "id" | "at">
+  entry: Omit<AdminActivity, "id" | "at">,
 ): AdminActivity[] {
   const list = getAdminActivity();
   const item: AdminActivity = {
@@ -240,19 +334,28 @@ export function logAdminActivity(
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     at: new Date().toISOString(),
   };
-  const next = [item, ...list].slice(0, 200); // keep last 200
-  try {
-    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(next));
-  } catch {
-    // ignore
-  }
+
+  const next = [item, ...list].slice(0, 300);
+  saveAdminActivityLocal(next);
+
+  // Async write to Supabase DB in background
+  logAdminActivityToDb({
+    adminId: entry.adminId,
+    adminName: entry.adminName,
+    adminRole: entry.adminRole,
+    action: entry.action,
+    vendorId: entry.vendorId,
+    vendorName: entry.vendorName,
+    vrfNumber: entry.vrfNumber,
+    detail: entry.detail,
+  }).catch(() => {
+    // Silent catch
+  });
+
   return next;
 }
 
-export function clearAdminActivity() {
-  try {
-    localStorage.removeItem(ACTIVITY_KEY);
-  } catch {
-    // ignore
-  }
+export async function clearAdminActivity() {
+  saveAdminActivityLocal([]);
+  await clearAdminActivitiesFromDb();
 }

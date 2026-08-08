@@ -13,7 +13,7 @@ import { getVendorDocumentUrl } from "./storage";
  * Prevents PGRST204 for legacy fields like category, description, state, routingNumber.
  */
 export function sanitizeVendorPayload(
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
 ): Record<string, unknown> {
   const allowed = new Set<string>(VENDOR_TABLE_COLUMNS);
   const clean: Record<string, unknown> = {};
@@ -81,7 +81,7 @@ export async function getUsers(): Promise<User[]> {
 
 export async function createVendor(vendor: VendorInsert) {
   const payload = sanitizeVendorPayload(
-    vendor as unknown as Record<string, unknown>
+    vendor as unknown as Record<string, unknown>,
   );
 
   if (!payload.name || typeof payload.name !== "string") {
@@ -152,7 +152,7 @@ export async function searchVendors(query: string) {
     .from("vendors")
     .select("*")
     .or(
-      `vrfNumber.ilike.%${q}%,name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`
+      `vrfNumber.ilike.%${q}%,name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`,
     )
     .order("created_at", { ascending: false });
   if (error) throw new Error(formatSupabaseError(error));
@@ -167,7 +167,7 @@ export async function deleteVendor(id: string) {
 
 export async function updateVendorStatus(
   id: string,
-  status: "pending" | "approved" | "rejected" | string
+  status: "pending" | "approved" | "rejected" | string,
 ) {
   const { data, error } = await supabase
     .from("vendors")
@@ -183,14 +183,15 @@ export async function getVendorStats() {
   const vendors = await getVendors();
   return {
     total: vendors.length,
-    pending: vendors.filter((v) => (v.status ?? "pending") === "pending").length,
+    pending: vendors.filter((v) => (v.status ?? "pending") === "pending")
+      .length,
     approved: vendors.filter((v) => v.status === "approved").length,
     rejected: vendors.filter((v) => v.status === "rejected").length,
   };
 }
 
 export async function getVendorFileUrls(
-  vendor: Vendor
+  vendor: Vendor,
 ): Promise<Record<string, string | null>> {
   const fields = [
     "panFileId",
@@ -208,7 +209,7 @@ export async function getVendorFileUrls(
       if (storageId) {
         urls[field] = await getVendorDocumentUrl(storageId);
       }
-    })
+    }),
   );
   return urls;
 }
@@ -226,7 +227,7 @@ export async function upsertCurrentUser(profile: {
         email: profile.email,
         name: profile.name,
       },
-      { onConflict: "id" }
+      { onConflict: "id" },
     )
     .select()
     .single();
@@ -242,4 +243,69 @@ export async function getCurrentUser(userId: string) {
     .maybeSingle();
   if (error) throw new Error(formatSupabaseError(error));
   return data as User | null;
+}
+
+export type DbAdminActivity = {
+  id?: string;
+  at?: string;
+  adminId: string;
+  adminName: string;
+  adminRole: string;
+  action: string;
+  vendorId?: string;
+  vendorName?: string;
+  vrfNumber?: string;
+  detail?: string;
+};
+
+export async function getAdminActivitiesFromDb(): Promise<DbAdminActivity[]> {
+  try {
+    const { data, error } = await supabase
+      .from("admin_activity")
+      .select("*")
+      .order("at", { ascending: false })
+      .limit(300);
+
+    if (error) {
+      return [];
+    }
+    return (data as DbAdminActivity[]) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function logAdminActivityToDb(
+  activity: Omit<DbAdminActivity, "id" | "at">,
+): Promise<DbAdminActivity | null> {
+  try {
+    const payload = {
+      ...activity,
+      at: new Date().toISOString(),
+    };
+    const { data, error } = await supabase
+      .from("admin_activity")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      return null;
+    }
+    return data as DbAdminActivity;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearAdminActivitiesFromDb(): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("admin_activity")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+    return !error;
+  } catch {
+    return false;
+  }
 }

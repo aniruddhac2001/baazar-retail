@@ -61,7 +61,9 @@ export function Step2({ data, onChange, errors }: Props) {
                   onChange={(e) => onChange({ commAddress: e.target.value })}
                 />
                 {errors.commAddress && (
-                  <p className="text-xs text-destructive">{errors.commAddress}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.commAddress}
+                  </p>
                 )}
               </div>
 
@@ -75,7 +77,9 @@ export function Step2({ data, onChange, errors }: Props) {
                   onChange={(e) => onChange({ commDistrict: e.target.value })}
                 />
                 {errors.commDistrict && (
-                  <p className="text-xs text-destructive">{errors.commDistrict}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.commDistrict}
+                  </p>
                 )}
               </div>
 
@@ -89,7 +93,9 @@ export function Step2({ data, onChange, errors }: Props) {
                   onChange={(e) => onChange({ commLocation: e.target.value })}
                 />
                 {errors.commLocation && (
-                  <p className="text-xs text-destructive">{errors.commLocation}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.commLocation}
+                  </p>
                 )}
               </div>
 
@@ -107,7 +113,9 @@ export function Step2({ data, onChange, errors }: Props) {
                   inputMode="numeric"
                 />
                 {errors.commPinCode && (
-                  <p className="text-xs text-destructive">{errors.commPinCode}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.commPinCode}
+                  </p>
                 )}
               </div>
 

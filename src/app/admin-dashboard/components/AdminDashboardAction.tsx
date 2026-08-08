@@ -1,3 +1,3 @@
 export default function AdminDashboardAction() {
-  return <div>AdminDashboardAction Component</div>
+  return <div>AdminDashboardAction Component</div>;
 }

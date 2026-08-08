@@ -5,5 +5,5 @@ export default function Topbar() {
         <span className="text-lg font-semibold">Baazar Retail</span>
       </div>
     </header>
-  )
+  );
 }

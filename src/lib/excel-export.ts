@@ -11,7 +11,10 @@ import { toast } from "sonner";
  */
 export function getVendorFilename(vendor: Vendor): string {
   const rawId = vendor.vrfNumber || vendor.id || "vendor";
-  return rawId.replace(/[/\\?%*:|"<>]/g, "_").replace(/\s+/g, "_").trim();
+  return rawId
+    .replace(/[/\\?%*:|"<>]/g, "_")
+    .replace(/\s+/g, "_")
+    .trim();
 }
 
 /**
@@ -21,7 +24,7 @@ export function getVendorFilename(vendor: Vendor): string {
  */
 export function exportVendorsToExcel(
   vendors: Vendor[],
-  options?: { isSuperAdminReport?: boolean }
+  options?: { isSuperAdminReport?: boolean },
 ) {
   if (!vendors || vendors.length === 0) return;
 
@@ -156,7 +159,7 @@ export function exportVendorsToExcel(
       const rejAct = activities.find(
         (a) =>
           a.action === "rejected" &&
-          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber))
+          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
       );
 
       const rejRole = rejAct?.adminRole;
@@ -251,9 +254,7 @@ export function exportVendorsToExcel(
     }
 
     row.push(
-      v.created_at
-        ? new Date(v.created_at).toLocaleDateString("en-IN")
-        : "—"
+      v.created_at ? new Date(v.created_at).toLocaleDateString("en-IN") : "—",
     );
 
     if (isSuperAdminReport) {

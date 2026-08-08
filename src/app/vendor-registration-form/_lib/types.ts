@@ -27,11 +27,7 @@ export const ADDRESS_PROOF_TYPES = [
   "Other",
 ] as const;
 
-export const MSMED_TYPES = [
-  "Micro",
-  "Small",
-  "Medium",
-] as const;
+export const MSMED_TYPES = ["Micro", "Small", "Medium"] as const;
 
 export const DEPARTMENTS = [
   "Men's Wear",

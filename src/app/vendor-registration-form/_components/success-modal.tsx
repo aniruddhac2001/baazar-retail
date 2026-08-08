@@ -93,9 +93,7 @@ export function SuccessModal({ open, onClose, vrfNumber }: Props) {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-orange-700/80">
                   Your unique registration ID
                 </p>
-                <div
-                  className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3"
-                >
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
                   <p
                     className="font-mono text-sm font-bold tracking-wide sm:text-base"
                     style={{ color: "#0A2540" }}

@@ -1,3 +1,3 @@
 export default function AdminSecretGate() {
-  return <div>AdminSecretGate Component</div>
+  return <div>AdminSecretGate Component</div>;
 }
