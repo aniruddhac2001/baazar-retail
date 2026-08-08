@@ -57,7 +57,6 @@ import {
   RefreshCwIcon,
   AlertTriangleIcon,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { fetchAdminActivityAsync } from "../_lib/admins";
 
@@ -157,8 +156,8 @@ function VendorProfileModal({
         status === "rejected"
           ? "rejected"
           : status === "approved" ||
-              status === "accounts_approved" ||
-              status === "gst_approved"
+            status === "accounts_approved" ||
+            status === "gst_approved"
             ? "approved"
             : status;
       logAdminActivity({
@@ -183,7 +182,7 @@ function VendorProfileModal({
     const next = admin.canCrud
       ? admin.role === "super"
         ? // super: advance one stage or fully approve if at end
-          current === "pending"
+        current === "pending"
           ? "accounts_approved"
           : current === "accounts_approved"
             ? "gst_approved"
@@ -653,172 +652,7 @@ function ManageUsersPanel() {
   );
 }
 
-function RejectionBreakdownPanel({
-  vendors,
-  activities,
-  onSelectVendor,
-}: {
-  vendors: Vendor[];
-  activities: AdminActivity[];
-  onSelectVendor: (vendor: Vendor) => void;
-}) {
-  const rejectedVendors = useMemo(() => {
-    return vendors.filter((v) => v.status === "rejected");
-  }, [vendors]);
 
-  const counts = useMemo(() => {
-    let accounts = 0;
-    let gst = 0;
-    let it = 0;
-
-    rejectedVendors.forEach((v) => {
-      const rejAct = activities.find(
-        (a) =>
-          a.action === "rejected" &&
-          (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
-      );
-      let role = rejAct?.adminRole;
-      if (!role) {
-        const rejRole = (v.rejectedRole || v.rejectedAtStage || "").toLowerCase();
-        const rem = (v.remarks || "").toLowerCase();
-        if (rejRole === "gst" || rem.includes("gst")) role = "gst";
-        else if (rejRole === "it" || rem.includes("it")) role = "it";
-        else role = "accounts";
-      }
-
-      if (role === "gst") gst++;
-      else if (role === "it") it++;
-      else accounts++;
-    });
-
-    return { total: rejectedVendors.length, accounts, gst, it };
-  }, [rejectedVendors, activities]);
-
-  return (
-    <Card className="shadow-sm border-red-100 bg-red-50/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2 text-red-900">
-              <XCircleIcon className="w-5 h-5 text-red-600" />
-              Rejected Applications Breakdown ({counts.total})
-            </CardTitle>
-            <p className="text-xs text-red-700/80 mt-1">
-              Synchronized breakdown of rejected vendor applications across
-              Accounts, GST, and IT desks.
-            </p>
-          </div>
-          <Badge
-            variant="outline"
-            className="bg-red-100 border-red-300 text-red-800 font-semibold px-3 py-1"
-          >
-            {counts.total} Rejections Total
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Desk Breakdown Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Accounts Desk
-            </p>
-            <p className="text-2xl font-bold text-red-600 mt-1">
-              {counts.accounts}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              Rejected at Accounts Stage
-            </p>
-          </div>
-          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              GST Desk
-            </p>
-            <p className="text-2xl font-bold text-red-600 mt-1">{counts.gst}</p>
-            <p className="text-[11px] text-muted-foreground">
-              Rejected at GST Stage
-            </p>
-          </div>
-          <div className="p-3 rounded-lg border border-red-200 bg-white shadow-xs">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              IT Desk
-            </p>
-            <p className="text-2xl font-bold text-red-600 mt-1">{counts.it}</p>
-            <p className="text-[11px] text-muted-foreground">
-              Rejected at IT Stage
-            </p>
-          </div>
-        </div>
-
-        {/* Rejected Vendors List */}
-        {rejectedVendors.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-4">
-            No rejected applications found in database.
-          </p>
-        ) : (
-          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-            {rejectedVendors.map((v) => {
-              const rejAct = activities.find(
-                (a) =>
-                  a.action === "rejected" &&
-                  (a.vendorId === v.id ||
-                    (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
-              );
-              let rejBy = "Accounts Desk";
-              if (rejAct) {
-                rejBy = `${rejAct.adminName} (${roleLabel(rejAct.adminRole)})`;
-              } else if (v.rejectedBy) {
-                rejBy = `${v.rejectedBy} (${roleLabel((v.rejectedRole as AdminRole) || "accounts")})`;
-              } else {
-                const rem = (v.remarks || "").toLowerCase();
-                if (rem.includes("gst")) rejBy = "GST Desk";
-                else if (rem.includes("it")) rejBy = "IT Desk";
-                else rejBy = "Accounts Desk";
-              }
-              return (
-                <div
-                  key={v.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-white border border-slate-200 hover:border-red-300 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                        {v.vrfNumber || "—"}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-900 truncate">
-                        {v.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Rejected by:{" "}
-                      <span className="font-medium text-slate-700">
-                        {rejBy}
-                      </span>
-                      {v.created_at && (
-                        <span className="ml-2">
-                          · Submitted{" "}
-                          {new Date(v.created_at).toLocaleDateString("en-IN")}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs shrink-0 border-slate-200 hover:bg-slate-50"
-                    onClick={() => onSelectVendor(v)}
-                  >
-                    View Details
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function ActivityPanel({
   vendors,
@@ -991,8 +825,10 @@ function AdminDashboardInner({
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showLoading = false) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const [v, s] = await Promise.all([getVendors(), getVendorStats()]);
       const fetchedVendors = v ?? [];
@@ -1002,16 +838,16 @@ function AdminDashboardInner({
       setActivities(acts);
     } catch {
       toast.error("Failed to load vendors from Supabase.");
-      setVendors([]);
+      setVendors((prev) => prev ?? []);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(true);
     const interval = setInterval(() => {
-      load();
+      load(false);
     }, 15000);
     return () => clearInterval(interval);
   }, [load]);
@@ -1158,11 +994,6 @@ function AdminDashboardInner({
         {admin.canCrud && (
           <>
             <ManageUsersPanel />
-            <RejectionBreakdownPanel
-              vendors={vendors ?? []}
-              activities={activities}
-              onSelectVendor={(v) => setSelectedVendor(v)}
-            />
             <ActivityPanel vendors={vendors ?? []} onRefreshRequested={load} />
           </>
         )}
@@ -1255,17 +1086,7 @@ function AdminDashboardInner({
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b">
-                      {Array.from({ length: 8 }).map((_, j) => (
-                        <td key={j} className="px-4 py-3">
-                          <Skeleton className="h-4 w-24" />
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : filteredVendors.length === 0 ? (
+                {filteredVendors.length === 0 ? (
                   <tr>
                     <td
                       colSpan={8}
