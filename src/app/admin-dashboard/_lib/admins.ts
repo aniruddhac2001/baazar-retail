@@ -341,11 +341,30 @@ export async function fetchAdminActivityAsync(
     });
   }
 
-  // Sort descending by timestamp
-  combined.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  let finalCombined = combined;
 
-  saveAdminActivityLocal(combined);
-  return combined;
+  // Filter out activities for vendors that no longer exist in DB
+  if (vendors && Array.isArray(vendors)) {
+    const validVendorIds = new Set(vendors.map((v) => v.id));
+    const validVrfNumbers = new Set(
+      vendors.map((v) => v.vrfNumber).filter(Boolean),
+    );
+
+    finalCombined = combined.filter((item) => {
+      if (!item.vendorId && !item.vrfNumber) return true;
+      const idMatch = item.vendorId && validVendorIds.has(item.vendorId);
+      const vrfMatch = item.vrfNumber && validVrfNumbers.has(item.vrfNumber);
+      return idMatch || vrfMatch;
+    });
+  }
+
+  // Sort descending by timestamp
+  finalCombined.sort(
+    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
+  );
+
+  saveAdminActivityLocal(finalCombined);
+  return finalCombined;
 }
 
 export function logAdminActivity(

@@ -860,7 +860,17 @@ function AdminDashboardInner({
           a.action === "rejected" &&
           (a.vendorId === v.id || (a.vrfNumber && a.vrfNumber === v.vrfNumber)),
       );
-      return rej?.adminRole ?? "accounts";
+      if (rej?.adminRole) return rej.adminRole;
+      const rejRole = (
+        v.rejectedRole ||
+        v.rejectedAtStage ||
+        ""
+      ).toLowerCase();
+      if (rejRole) return rejRole;
+      const rem = (v.remarks || "").toLowerCase();
+      if (rem.includes("gst")) return "gst";
+      if (rem.includes("it")) return "it";
+      return "accounts";
     };
 
     return (vendors ?? [])
@@ -868,12 +878,18 @@ function AdminDashboardInner({
         const status = v.status ?? "pending";
 
         // Desk pipeline access control:
-        if (admin.role === "gst") {
+        if (admin.role === "accounts") {
+          // Accounts desk sees pending and vendors rejected at Accounts stage
+          if (status === "rejected") {
+            const rejRole = getRejectionRole(v);
+            if (rejRole !== "accounts") return false;
+          }
+        } else if (admin.role === "gst") {
           // GST desk only sees applications that reached GST desk
           if (status === "pending") return false;
           if (status === "rejected") {
             const rejRole = getRejectionRole(v);
-            if (rejRole === "accounts") return false; // Rejected at Accounts before reaching GST
+            if (rejRole === "accounts" || rejRole === "it") return false;
           }
         } else if (admin.role === "it") {
           // IT desk only sees applications that reached IT desk
@@ -881,7 +897,7 @@ function AdminDashboardInner({
             return false;
           if (status === "rejected") {
             const rejRole = getRejectionRole(v);
-            if (rejRole !== "it") return false; // Rejected before reaching IT
+            if (rejRole !== "it") return false;
           }
         }
 
@@ -945,51 +961,7 @@ function AdminDashboardInner({
           </div>
         </div>
 
-        {/* Global Stat Cards for all admins */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Total Submissions",
-              value: (vendors ?? []).length,
-              icon: (
-                <UsersIcon className="w-5 h-5" style={{ color: "#FF6B00" }} />
-              ),
-            },
-            {
-              label: "Rejected Applications",
-              value: (vendors ?? []).filter((v) => v.status === "rejected")
-                .length,
-              icon: <XCircleIcon className="w-5 h-5 text-red-500" />,
-            },
-            {
-              label: "Verified Vendors",
-              value: (vendors ?? []).filter((v) => v.status === "approved")
-                .length,
-              icon: <CheckCircle2Icon className="w-5 h-5 text-green-500" />,
-            },
-            {
-              label: "Documents Uploaded",
-              value: countAllDocuments(vendors ?? []),
-              icon: <FileTextIcon className="w-5 h-5 text-blue-500" />,
-            },
-          ].map((card) => (
-            <Card key={card.label} className="shadow-sm">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-medium text-muted-foreground">
-                    {card.label}
-                  </CardTitle>
-                  {card.icon}
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <p className="text-3xl font-bold text-foreground">
-                  {card.value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
 
         {admin.canCrud && (
           <>
@@ -1016,49 +988,60 @@ function AdminDashboardInner({
                     className="pl-9 h-9 text-xs"
                   />
                 </div>
-                {/* GST Filter */}
-                <Select value={gstFilter} onValueChange={setGstFilter}>
-                  <SelectTrigger className="h-9 w-[130px] text-xs">
-                    <SelectValue placeholder="GST Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All GST</SelectItem>
-                    {GST_OPTIONS.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {/* Status Filter */}
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9 w-[140px] text-xs">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="pending">Pending (Accounts)</SelectItem>
-                    <SelectItem value="accounts_approved">
-                      Pending (GST)
-                    </SelectItem>
-                    <SelectItem value="gst_approved">Pending (IT)</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-9 gap-1.5 text-xs shrink-0"
-                  onClick={() =>
-                    exportVendorsToExcel(filteredVendors, {
-                      isSuperAdminReport: admin.canCrud,
-                    })
-                  }
-                >
-                  <DownloadIcon className="w-3.5 h-3.5" />
-                  Export
-                </Button>
+                {admin.canCrud && (
+                  <>
+                    {/* GST Filter */}
+                    <Select value={gstFilter} onValueChange={setGstFilter}>
+                      <SelectTrigger className="h-9 w-[130px] text-xs">
+                        <SelectValue placeholder="GST Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All GST</SelectItem>
+                        {GST_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {/* Status Filter */}
+                    <Select
+                      value={statusFilter}
+                      onValueChange={setStatusFilter}
+                    >
+                      <SelectTrigger className="h-9 w-[140px] text-xs">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="pending">
+                          Pending (Accounts)
+                        </SelectItem>
+                        <SelectItem value="accounts_approved">
+                          Pending (GST)
+                        </SelectItem>
+                        <SelectItem value="gst_approved">
+                          Pending (IT)
+                        </SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 gap-1.5 text-xs shrink-0"
+                      onClick={() =>
+                        exportVendorsToExcel(filteredVendors, {
+                          isSuperAdminReport: admin.canCrud,
+                        })
+                      }
+                    >
+                      <DownloadIcon className="w-3.5 h-3.5" />
+                      Export
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </CardHeader>
