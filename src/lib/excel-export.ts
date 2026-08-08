@@ -36,6 +36,7 @@ export function exportVendorsToExcel(
         : `baazar-vendors-export-${new Date().toISOString().split("T")[0]}.xlsx`;
 
   const headers = [
+    "S.No.",
     // Group 1: Basic & Entity
     "Vendor ID",
     "Entity Name",
@@ -103,7 +104,37 @@ export function exportVendorsToExcel(
   const rows: (string | number)[][] = [headers];
   const activities = getAdminActivity();
 
-  vendors.forEach((v) => {
+  // Sort vendors in ascending serial order (001, 002, 003...)
+  const sortedVendors = [...vendors].sort((a, b) => {
+    const getSeq = (v: Vendor) => {
+      if (v.vrfNumber) {
+        const parts = v.vrfNumber.split("/");
+        if (parts.length >= 3) {
+          const num = parseInt(parts[parts.length - 1].trim(), 10);
+          if (!isNaN(num)) return num;
+        }
+        const match = v.vrfNumber.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num)) return num;
+        }
+      }
+      return null;
+    };
+
+    const seqA = getSeq(a);
+    const seqB = getSeq(b);
+
+    if (seqA !== null && seqB !== null) {
+      return seqA - seqB;
+    }
+
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateA - dateB;
+  });
+
+  sortedVendors.forEach((v, index) => {
     const status = v.status ?? "pending";
     let accountsStatus = "Pending";
     let gstStatus = "Pending";
@@ -146,61 +177,73 @@ export function exportVendorsToExcel(
       }
     }
 
+    const cell = (str: string | null | undefined): string => {
+      if (!str || typeof str !== "string" || !str.trim()) return "—";
+      return str.trim();
+    };
+
+    const phoneCell = (str: string | null | undefined): string => {
+      if (!str || typeof str !== "string" || !str.trim()) return "—";
+      const cleaned = str.trim();
+      return cleaned.startsWith("+91") ? cleaned : `+91 ${cleaned}`;
+    };
+
     const row: (string | number)[] = [
+      index + 1,
       // Group 1
-      v.vrfNumber ?? "—",
-      v.name ?? "—",
-      v.entityType ?? "—",
+      cell(v.vrfNumber),
+      cell(v.name),
+      cell(v.entityType),
 
       // Group 2
-      v.address ?? "—",
-      v.district ?? "—",
-      v.city ?? "—",
-      v.zip ?? "—",
-      v.phone ? `+91 ${v.phone}` : "—",
-      v.registeredPhoneAdditional ? `+91 ${v.registeredPhoneAdditional}` : "—",
-      v.email ?? "—",
+      cell(v.address),
+      cell(v.district),
+      cell(v.city),
+      cell(v.zip),
+      phoneCell(v.phone),
+      phoneCell(v.registeredPhoneAdditional),
+      cell(v.email),
 
       // Group 3
       v.sameAsRegistered ? "Yes" : "No",
-      v.sameAsRegistered ? "—" : v.commAddress ?? "—",
-      v.sameAsRegistered ? "—" : v.commDistrict ?? "—",
-      v.sameAsRegistered ? "—" : v.commLocation ?? "—",
-      v.sameAsRegistered ? "—" : v.commPinCode ?? "—",
-      v.sameAsRegistered ? "—" : v.commPhone ? `+91 ${v.commPhone}` : "—",
-      v.sameAsRegistered ? "—" : v.commEmail ?? "—",
+      v.sameAsRegistered ? "—" : cell(v.commAddress),
+      v.sameAsRegistered ? "—" : cell(v.commDistrict),
+      v.sameAsRegistered ? "—" : cell(v.commLocation),
+      v.sameAsRegistered ? "—" : cell(v.commPinCode),
+      v.sameAsRegistered ? "—" : phoneCell(v.commPhone),
+      v.sameAsRegistered ? "—" : cell(v.commEmail),
 
       // Group 4
-      v.panNumber ?? "—",
+      cell(v.panNumber),
       v.hasTan ? "Yes" : "No",
-      v.hasTan ? v.tanNumber ?? "—" : "—",
-      v.gstStatus ?? "—",
-      v.gstin ?? "—",
-      v.gstRegistrationDate ?? "—",
-      v.placeOfBusiness ?? "—",
-      v.proofOfAddressType ?? "—",
+      v.hasTan ? cell(v.tanNumber) : "—",
+      cell(v.gstStatus),
+      cell(v.gstin),
+      cell(v.gstRegistrationDate),
+      cell(v.placeOfBusiness),
+      cell(v.proofOfAddressType),
 
       // Group 5
       v.isMsmed ? "Yes" : "No",
-      v.isMsmed ? v.msmedType ?? "—" : "—",
-      v.isMsmed ? v.msmedLineOfBusiness ?? "—" : "—",
-      v.bankName ?? "—",
-      v.accountNumber ? String(v.accountNumber) : "—",
-      v.ifscCode ?? "—",
-      v.chequeLabel ?? "—",
-      v.branchName ?? "—",
-      v.branchAddress ?? "—",
+      v.isMsmed ? cell(v.msmedType) : "—",
+      v.isMsmed ? cell(v.msmedLineOfBusiness) : "—",
+      cell(v.bankName),
+      v.accountNumber ? String(v.accountNumber).trim() : "—",
+      cell(v.ifscCode),
+      cell(v.chequeLabel),
+      cell(v.branchName),
+      cell(v.branchAddress),
 
       // Group 6
-      Array.isArray(v.goodsServices)
+      Array.isArray(v.goodsServices) && v.goodsServices.length > 0
         ? v.goodsServices.join(", ")
-        : v.goodsServices ?? "—",
-      v.departmentTrading ?? "—",
-      v.vendorContactPerson ? `+91 ${v.vendorContactPerson}` : "—",
-      v.employeeRefName ? "Yes" : "No",
-      v.employeeRefName ?? "—",
-      v.employeeRefContact ? `+91 ${v.employeeRefContact}` : "—",
-      v.remarks ?? "—",
+        : cell(v.goodsServices as unknown as string),
+      cell(v.departmentTrading),
+      phoneCell(v.vendorContactPerson),
+      v.employeeRefName && v.employeeRefName.trim() ? "Yes" : "No",
+      cell(v.employeeRefName),
+      phoneCell(v.employeeRefContact),
+      cell(v.remarks),
     ];
 
     if (!isSuperAdminReport) {

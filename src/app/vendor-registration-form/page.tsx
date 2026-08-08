@@ -133,10 +133,10 @@ function validateStep(
       errs.departmentTrading = "Select a department.";
     }
 
-    if (!data.employeeRefName.trim())
-      errs.employeeRefName = "Employee name is required.";
-    if (data.employeeRefContact.length !== 10)
-      errs.employeeRefContact = "Enter a valid 10-digit contact number.";
+    if (!data.employeeRefName || !data.employeeRefName.trim())
+      errs.employeeRefName = "Baazar Retail Employee Name is required.";
+    if (!data.employeeRefContact || data.employeeRefContact.length !== 10)
+      errs.employeeRefContact = "Enter a valid 10-digit employee contact number.";
 
     if (!data.agreeNda) errs.agreeNda = "You must agree to the NDA.";
     if (!data.agreeTerms) errs.agreeTerms = "You must agree to the terms.";

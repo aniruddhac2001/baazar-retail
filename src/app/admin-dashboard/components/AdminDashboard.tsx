@@ -230,6 +230,14 @@ function VendorProfileModal({
       label: "Goods/Services",
       value: vendor.goodsServices?.join(", "),
     },
+    { label: "Employee Ref Name", value: vendor.employeeRefName || undefined },
+    {
+      label: "Employee Ref Contact",
+      value: vendor.employeeRefContact
+        ? `+91 ${vendor.employeeRefContact}`
+        : undefined,
+    },
+    { label: "Vendor Contact Person", value: vendor.vendorContactPerson ? `+91 ${vendor.vendorContactPerson}` : undefined },
     {
       label: "Submitted At",
       value: vendor.created_at
