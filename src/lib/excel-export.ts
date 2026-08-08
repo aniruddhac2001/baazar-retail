@@ -265,9 +265,22 @@ export function exportVendorsToExcel(
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  ws["!cols"] = headers.map((h) => ({
-    wch: Math.max(h.length + 4, 16),
-  }));
+  // Dynamically calculate column widths to fit the longest header or cell value
+  const colWidths = headers.map((header, colIdx) => {
+    let maxLen = header ? String(header).length : 10;
+    for (let r = 1; r < rows.length; r++) {
+      const val = rows[r][colIdx];
+      if (val != null) {
+        const len = String(val).length;
+        if (len > maxLen) {
+          maxLen = len;
+        }
+      }
+    }
+    return { wch: Math.min(Math.max(maxLen + 4, 12), 65) };
+  });
+
+  ws["!cols"] = colWidths;
 
   const accountNumColIdx = headers.indexOf("Account Number");
   if (accountNumColIdx !== -1 && ws["!ref"]) {
