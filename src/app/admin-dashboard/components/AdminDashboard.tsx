@@ -17,6 +17,7 @@ import {
   resetAdminUsersToDefault,
   getAdminActivity,
   logAdminActivity,
+  saveAdminActivityLocal,
   clearAdminActivity,
 } from "../_lib/admins";
 import { Button } from "@/components/ui/button";
@@ -681,11 +682,11 @@ function ActivityPanel({
     refresh();
   }, [refresh]);
 
-  const handleClear = async () => {
-    if (!confirm("Clear all activity logs?")) return;
-    await clearAdminActivity();
-    await refresh();
-    toast.success("Activity log cleared.");
+  const handleClear = () => {
+    if (!confirm("Clear activity log view?")) return;
+    saveAdminActivityLocal([]);
+    setItems([]);
+    toast.success("Activity log cleared from display.");
   };
 
   return (
@@ -718,23 +719,6 @@ function ActivityPanel({
                 className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
               />
               Sync DB
-            </Button>
-            <Button
-              size="sm"
-              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
-              onClick={() => {
-                if (!vendors || vendors.length === 0) {
-                  toast.error("No vendor details to export.");
-                  return;
-                }
-                exportVendorsToExcel(vendors, { isSuperAdminReport: true });
-                toast.success(
-                  "Exported Super Admin report with desk statuses.",
-                );
-              }}
-            >
-              <DownloadIcon className="w-3.5 h-3.5" />
-              Export Excel Report
             </Button>
             <Button size="sm" variant="outline" onClick={handleClear}>
               Clear log
