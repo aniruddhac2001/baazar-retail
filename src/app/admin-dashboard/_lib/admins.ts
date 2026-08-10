@@ -351,7 +351,8 @@ export async function fetchAdminActivityAsync(
     );
 
     finalCombined = combined.filter((item) => {
-      if (!item.vendorId && !item.vrfNumber) return true;
+      if (item.action === "deleted" || (!item.vendorId && !item.vrfNumber))
+        return true;
       const idMatch = item.vendorId && validVendorIds.has(item.vendorId);
       const vrfMatch = item.vrfNumber && validVrfNumbers.has(item.vrfNumber);
       return idMatch || vrfMatch;

@@ -160,8 +160,18 @@ export async function searchVendors(query: string) {
 }
 
 export async function deleteVendor(id: string) {
-  const { error } = await supabase.from("vendors").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("vendors")
+    .delete()
+    .eq("id", id)
+    .select();
+
   if (error) throw new Error(formatSupabaseError(error));
+  if (!data || data.length === 0) {
+    throw new Error(
+      "Deletion failed: No record was deleted from Supabase. Please execute the missing DELETE policy in your Supabase SQL Editor.",
+    );
+  }
   return true;
 }
 

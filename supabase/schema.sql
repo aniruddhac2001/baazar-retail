@@ -145,6 +145,12 @@ create policy "vendors_update_public"
   using (true)
   with check (true);
 
+drop policy if exists "vendors_delete_public" on public.vendors;
+create policy "vendors_delete_public"
+  on public.vendors for delete
+  to anon, authenticated
+  using (true);
+
 -- Admin Activity Log table for multi-admin database synchronization
 create table if not exists public.admin_activity (
   id uuid primary key default gen_random_uuid(),

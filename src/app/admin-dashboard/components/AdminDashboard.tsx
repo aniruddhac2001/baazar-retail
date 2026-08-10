@@ -215,8 +215,11 @@ function VendorProfileModal({
       toast.success("Vendor record permanently deleted.");
       onStatusUpdated();
       onClose();
-    } catch {
-      toast.error("Failed to delete vendor.");
+    } catch (err) {
+      console.error("Failed to delete vendor:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete vendor.",
+      );
     }
   };
 
@@ -1124,7 +1127,11 @@ function AdminDashboardInner({
                               load(false);
                             } catch (err) {
                               console.error("Failed to delete vendor:", err);
-                              toast.error("Failed to delete vendor from database.");
+                              toast.error(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Failed to delete vendor from database.",
+                              );
                               load(false);
                             }
                           }}
