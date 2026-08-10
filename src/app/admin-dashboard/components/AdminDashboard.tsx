@@ -42,7 +42,7 @@ import {
   getVendorFilename,
   downloadVendorDocumentsZip,
 } from "@/lib/excel-export";
-import { getVendorDocumentUrl } from "@/lib/supabase/storage";
+import { getVendorDocumentUrl, removeVendorDocument } from "@/lib/supabase/storage";
 import {
   ShieldAlertIcon,
   UsersIcon,
@@ -988,60 +988,26 @@ function AdminDashboardInner({
                     className="pl-9 h-9 text-xs"
                   />
                 </div>
-                {admin.canCrud && (
-                  <>
-                    {/* GST Filter */}
-                    <Select value={gstFilter} onValueChange={setGstFilter}>
-                      <SelectTrigger className="h-9 w-[130px] text-xs">
-                        <SelectValue placeholder="GST Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All GST</SelectItem>
-                        {GST_OPTIONS.map((opt) => (
-                          <SelectItem key={opt} value={opt}>
-                            {opt}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {/* Status Filter */}
-                    <Select
-                      value={statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
-                      <SelectTrigger className="h-9 w-[140px] text-xs">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="pending">
-                          Pending (Accounts)
-                        </SelectItem>
-                        <SelectItem value="accounts_approved">
-                          Pending (GST)
-                        </SelectItem>
-                        <SelectItem value="gst_approved">
-                          Pending (IT)
-                        </SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 gap-1.5 text-xs shrink-0"
-                      onClick={() =>
-                        exportVendorsToExcel(filteredVendors, {
-                          isSuperAdminReport: admin.canCrud,
-                        })
-                      }
-                    >
-                      <DownloadIcon className="w-3.5 h-3.5" />
-                      Export
-                    </Button>
-                  </>
-                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 gap-1.5 text-xs shrink-0"
+                  onClick={() => {
+                    if (!filteredVendors || filteredVendors.length === 0) {
+                      toast.error("No matching vendor data to export.");
+                      return;
+                    }
+                    exportVendorsToExcel(filteredVendors, {
+                      isSuperAdminReport: admin.canCrud,
+                    });
+                    toast.success(
+                      `Exported ${filteredVendors.length} vendor record(s) to Excel.`,
+                    );
+                  }}
+                >
+                  <DownloadIcon className="w-3.5 h-3.5" />
+                  Export
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -1075,14 +1041,15 @@ function AdminDashboardInner({
                       colSpan={8}
                       className="px-4 py-12 text-center text-muted-foreground text-sm"
                     >
-                      No vendor submissions found matching current filters.
+                      No vendor submissions found matching current search.
                     </td>
                   </tr>
                 ) : (
                   filteredVendors.map((v) => (
                     <tr
                       key={v.id}
-                      className="border-b hover:bg-muted/30 transition-colors"
+                      className="border-b hover:bg-muted/30 transition-colors cursor-pointer"
+                      onClick={() => setSelectedVendor(v)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-md">
@@ -1107,43 +1074,80 @@ function AdminDashboardInner({
                       <td className="px-4 py-3">
                         <StatusBadge status={v.status || undefined} />
                       </td>
-                      <td className="px-4 py-3 flex items-center gap-1">
+                      <td
+                        className="px-4 py-3 flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="gap-1 text-xs"
-                          onClick={() => setSelectedVendor(v)}
-                        >
-                          <EyeIcon className="w-3.5 h-3.5" />
-                          View
-                        </Button>
-                        {admin.canCrud && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={async () => {
-                              if (
-                                !confirm(
-                                  `Are you sure you want to permanently delete vendor ${v.vrfNumber || v.name} from Supabase database?`,
-                                )
+                          className="gap-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (
+                              !confirm(
+                                `Are you sure you want to permanently delete vendor ${v.vrfNumber || v.name}? This will remove the data completely from here and from the database.`,
                               )
-                                return;
-                              try {
-                                await deleteVendor(v.id);
-                                toast.success(
-                                  "Vendor record permanently deleted.",
-                                );
-                                load();
-                              } catch {
-                                toast.error("Failed to delete vendor.");
+                            )
+                              return;
+
+                            // Optimistically update local state immediately
+                            setVendors((prev) =>
+                              prev ? prev.filter((item) => item.id !== v.id) : [],
+                            );
+
+                            try {
+                              // Delete document files if any
+                              const fields = [
+                                "panFileId",
+                                "tanFileId",
+                                "gstFileId",
+                                "proofOfAddressFileId",
+                                "msmedFileId",
+                                "chequeFileId",
+                              ] as const;
+                              for (const f of fields) {
+                                const storageId = v[f];
+                                if (
+                                  typeof storageId === "string" &&
+                                  storageId.trim()
+                                ) {
+                                  try {
+                                    await removeVendorDocument(storageId);
+                                  } catch {
+                                    /* ignore if file missing */
+                                  }
+                                }
                               }
-                            }}
-                          >
-                            <Trash2Icon className="w-3.5 h-3.5" />
-                            Delete
-                          </Button>
-                        )}
+
+                              // Delete vendor record from database
+                              await deleteVendor(v.id);
+
+                              logAdminActivity({
+                                adminId: admin.id,
+                                adminName: admin.displayName,
+                                adminRole: admin.role,
+                                action: "deleted",
+                                vendorId: v.id,
+                                vendorName: v.name,
+                                vrfNumber: v.vrfNumber || undefined,
+                                detail: "Permanently deleted vendor record",
+                              });
+
+                              toast.success(
+                                "Vendor data permanently deleted from database.",
+                              );
+                              load(false);
+                            } catch (err) {
+                              console.error("Failed to delete vendor:", err);
+                              toast.error("Failed to delete vendor from database.");
+                              load(false);
+                            }
+                          }}
+                        >
+                          <Trash2Icon className="w-3.5 h-3.5" />
+                          Delete
+                        </Button>
                       </td>
                     </tr>
                   ))
