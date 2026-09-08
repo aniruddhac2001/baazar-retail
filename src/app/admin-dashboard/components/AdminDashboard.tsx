@@ -707,7 +707,7 @@ function ActivityPanel({
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Approvals and rejections by Accounts, GST and IT desks.
+              Approvals and rejections by Admins.
             </p>
           </div>
           <div className="flex items-center gap-2">
