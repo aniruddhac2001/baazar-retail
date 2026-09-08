@@ -21,7 +21,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
     id: "1",
     username: "baazarretail",
     password: "BR@ADMIN",
-    displayName: "Rohit Singh",
+    displayName: "Admin",
     role: "super",
     queue: [
       "pending",
