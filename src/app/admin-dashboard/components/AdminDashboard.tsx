@@ -925,7 +925,7 @@ function AdminDashboardInner({
             <ShieldAlertIcon className="w-5 h-5 text-white shrink-0" />
             <p className="text-white text-sm font-medium">
               {admin.canCrud
-                ? "Super Admin — Full access & Database Sync"
+                ? "Baazar Retail"
                 : admin.role === "accounts"
                   ? "Accounts desk — review new submissions"
                   : admin.role === "gst"
